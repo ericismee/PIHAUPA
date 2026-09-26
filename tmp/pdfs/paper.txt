@@ -1,0 +1,2170 @@
+=== PAGE 1 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13          Journal of Big Data  
+        https://doi.org/10.1186/s40537-025-01352-x                                
+                                                                                  
+                                                                                  
+        METHODOLOGY                                             Open Access       
+                                                                                  
+                                                                                  
+        Intelligent   average    utility pattern    analysis  using               
+                                                                                  
+        pre-large   concept     in dynamic     stream    data                     
+                                                                                  
+        Doyoung Kim1†, Seongbin Park1†, Junyoung Park1†, Hanju Kim1†, Seungwan Park1, Myungha Cho1 and Unil Yun1*
+                                                                                  
+                                                                                  
+        †Doyoung Kim, Seongbin Park,                                              
+                         Abstract                                                 
+        Junyoung Park and Hanju Kim                                               
+        are first author. Recent studies on high average utility pattern analysis aim to extract patterns from
+                         quantitative data considering the pattern length in incremental environments.
+        *Correspondence:                                                          
+        Unil Yun         However, traditional methods have the limitation that the pattern expansion process
+        yunei@sejong.ac.kr is conducted whenever incremental data occur. The pre-large concept is a technique
+        1Department of Computer                                                   
+                         that addresses this by classifying patterns and leveraging them to reduce re-scan
+        Engineering, Sejong University,                                           
+        Seoul, Republic of Korea and pattern expansion operations with a re-scan condition. In this paper, a novel
+                         approach is proposed for analyzing high average utility patterns leveraging the
+                         framework of the pre-large concept with the tight re-scan condition. Specifically,
+                         the proposed approach adopts a newly proposed tight re-scan condition combined
+                         with effective pattern tree management. This approach manages the occurrence
+                         of the pattern expansion process more efficiently than state-of-the-art methods
+                         and reduces redundant computations while extracting results through the average
+                         utility of each pattern. Comprehensive experiments on real and synthetic datasets
+                         demonstrate that the proposed method is superior to other comparison methods
+                         regarding runtime and scalability while exhibiting completeness with competitive
+                         memory usage. Furthermore, the sensitivity tests indicate that the proposed
+                         approach maintains the most stable runtime performance under varying thresholds,
+                         and the case study under concept drift tests demonstrates its superior scalability,
+                         showing its applicability compared to the state-of-the-art approach.
+                         Keywords Data analysis, Intelligent information system, Average utility, Pre-large
+                         concept, Re-scan condition                               
+                         Introduction                                             
+                         As large-scale data continuously expands with real-time information, the demand
+                         for intelligent data analysis systems for analyzing insightful knowledge has grown sig-
+                         nificantly, such as a knowledge-based visual question answering system [1], a powerful
+                         tensor decomposition technique for handling real-world knowledge [2], and a recom-
+                         mendation system based on knowledge enhancement techniques [3]. The data analy-
+                         sis technique is crucial in extracting valuable insights across various domains, such as
+                         detecting objects in rainy weather conditions [4] and providing information analysis to
+                         effectively counter threats [5]. Among these data analysis approaches, pattern analy-
+                         sis identifies recurring structures within datasets, enabling users to extract practical
+                         © The Author(s) 2026. Open Access This article is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International
+                         License, which permits any non-commercial use, sharing, distribution and reproduction in any medium or format, as long as you give appropriate
+                         credit to the original author(s) and the source, provide a link to the Creative Commons licence, and indicate if you modified the licensed material.
+                         You do not have permission under this licence to share adapted material derived from this article or parts of it. The images or other third party
+                         material in this article are included in the article’s Creative Commons licence, unless indicated otherwise in a credit line to the material. If material
+                         is not included in the article’s Creative Commons licence and your intended use is not permitted by statutory regulation or exceeds the permitted
+                         use, you will need to obtain permission directly from the copyright holder. To view a copy of this licence, visit h t t p : / / c e r a t i v e c o m m o n .s o r g / l i c e n s
+                         e s / b y - n c - n d / 4 . 0. /                         
+
+=== PAGE 2 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 2 of 34  
+                                                                                  
+                                                                                  
+                                                                                  
+                knowledge. One of the established approaches in pattern analysis involves analyzing fre-
+                quent patterns. It aims to discover patterns that frequently appear in binary data. Alter-
+                native strategies have also been proposed, such as frequent pattern analysis utilizing
+                multiple sampling techniques [6], frequent high minimum average utility sequence pat-
+                tern analysis [7]. Moreover, advanced pattern analysis approaches have been designed to
+                address specific challenges, such as top-k pattern analysis with the sliding window con-
+                cept [8] and sequential pattern analysis with the forgetting factor concept [9], also known
+                as the decaying factor, to prioritize the recent data stream. In pattern analysis with high
+                average utility, various approaches have been proposed to enhance efficiency and accu-
+                racy in pattern extraction. These approaches include methods that focus on analyzing
+                                                                                  
+                high average utility sequential patterns [10], further with a one-off condition [11], and
+                analyzing recent high average utility patterns that emphasize more recent data [12].
+                Additionally, an approach utilizing a list-based data structure [13] has been developed
+                to improve efficiency by reducing memory usage and computational overhead. Further-
+                more, multiple minimum utility threshold-based analysis [14] has been explored, allow-
+                ing for more flexible pattern analysis. While frequent pattern analysis remains a widely
+                utilized approach, it has certain limitations, particularly in binary data where only the
+                presence or absence of items is considered. Utility-oriented methods have been intro-
+                duced to analyze non-binary information and include additional factors, such as item
+                quantity and profit, to address these constraints. By incorporating these elements, util-
+                ity-based pattern analysis systems extract patterns contributing to higher overall utility.
+                                                                                  
+                Several methods have been developed within this framework, each focusing on different
+                aspects of utility-based pattern analysis. For example, one study explored a multi-level
+                concept [15] to evaluate utility values across multiple hierarchical levels, while another
+                addressed unstable negative data [16], where data contains fluctuating or contradictory
+                information. Dynamic knowledge environments introduce additional challenges as data
+                is continuously inserted, deleted, and modified. Some existing studies address deleted
+                information while maintaining knowledge relevance [17], others focus on efficiently
+                processing newly added data with sliding window strategy [18], and additional work
+                explore strategies based on multiple utility thresholds [19]. Recently, OIP-Miner [9]
+                applies a forgetting factor to account for the temporal significance in analyzing sequence
+                data with one-off conditions, yet it focuses on the sequence of data rather than utility-
+                oriented aspects. One major limitation of utility-oriented data analysis is its sensitivity
+                                                                                  
+                to pattern length. To mitigate this issue, average utility-based pattern analysis systems
+                have been introduced as an alternative approach. Instead of relying solely on total util-
+                ity, this method normalizes utility by dividing it by pattern length, reducing the impact
+                of pattern length on utility evaluation. Despite its advantages, most systems in this field
+                have been conducted in static environments, where data does not change after the ini-
+                tial pattern expansion process. Some methods have been proposed to address average
+                utility-oriented analysis within dynamic environments. However, these approaches fail
+                to incorporate previously discovered patterns and instead restart the pattern expan-
+                sion process from the beginning whenever new data is appended. This limitation arises
+                because the information gathered earlier becomes invalid. When additional transactions
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 3 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 3 of 34  
+                                                                                  
+                                                                                  
+                                                                                  
+                accumulate, the prior information becomes invalid in entire accumulated data. Thus, to
+                improve efficiency in dynamic data, the pre-large concept has been introduced as a solu-
+                tion to these challenges. By defining upper and lower thresholds, the pre-large-based
+                approach categorizes patterns into three groups: pre-large, large, and small. This clas-
+                sification system minimizes unnecessary re-scans, allowing for more accurate pattern
+                extraction following data updates without requiring the pattern expansion process for
+                all scanned data. However, prior pre-large-based approaches retain a critical limitation
+                in determining when a re-scan with pattern expansion operations is truly necessary. For
+                example, consider a large-scale e-commerce system where millions of past transactions
+                have accumulated, and 100 new real-time transactions are added. This small addition
+                                                                                  
+                of data is highly unlikely to alter the set of result patterns. Nevertheless, prior pre-
+                large approaches employ loose re-scan conditions. These conditions can misinterpret
+                even such minor updates as re-scan conditions, unnecessarily forcing a costly re-scan
+                with pattern expansion operations of the entire data containing millions of records. To
+                address this inefficiency, we suggest PIHAUPA (Pre-large Insertion High Average Util-
+                ity Pattern Analysis) as an intelligent system for analyzing high average utility patterns
+                within dynamic information systems. By incorporating the pre-large concept with the
+                novel tight re-scan condition, PIHAUPA introduces a refined re-scan condition that sig-
+                nificantly reduces redundant pattern expansion operations in dynamic environments.
+                This capability for efficient incremental processing is essential in numerous real-world
+                applications. One practical example is social media data analysis, where vast amounts
+                                                                                  
+                of user-generated content are continuously created. The ability to analyze social data
+                in real-time provides valuable insights into emerging trends, enabling businesses and
+                content creators to respond quickly to shifting user preferences. Given the need to effi-
+                ciently process small-scale data insertions, PIHAUPA is suitable for real-world dynamic
+                information. By minimizing redundant pattern expansion operations with the proposed
+                tight re-scan condition, PIHAUPA enhances the efficiency of analyzing evolving datasets
+                while maintaining accurate pattern extraction. To our knowledge, this is the first study
+                to introduce a tight re-scan condition within pre-large concept for list-based high aver-
+                age utility pattern analysis in incremental environments. The key contributions of this
+                research are summarized as follows:                               
+                                                                                  
+                 1. An intelligent system is introduced to analyze high average utility patterns from
+                   dynamic data within stream environments. This approach leverages the pre-large
+                   concept with a novel re-scan condition to minimize unnecessary re-scan processes by
+                   managing previously extracted pre-large and large patterns.    
+                 2. A tight re-scan condition is designed to optimize high average utility pattern
+                   analysis by minimizing redundant pattern expansion operations while ensuring no
+                   loss. Moreover, advanced utility-based data structures and pattern classification
+                   techniques effectively manage pre-large and large patterns, enhancing computational
+                                                                                  
+                   performance.                                                   
+                 3. Comprehensive evaluations are performed using real and synthetic datasets to
+                   assess the performance of the proposed intelligent system. The experimental results
+                   demonstrate superior runtime with scalability and sensitivity to comparison methods
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 4 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 4 of 34  
+                                                                                  
+                                                                                  
+                                                                                  
+                   while exhibiting completeness and competitive memory usage, indicating the
+                   effectiveness of the tight re-scan condition. Moreover, its performance under concept
+                   drift tests further shows the practical applicability of the proposed approach.
+                The following sections in this paper are described as follows. In Sect. "Related work",
+                related works for the proposed algorithm are introduced. Section "High utility pattern
+                                                                                  
+                analysis" introduces a detailed description of the entire procedure for the proposed
+                method included in the analysis of the algorithm and complexity. Section "High aver-
+                age utility pattern analysis" provides the analysis of comprehensive experiments with
+                other comparison methods while exhibiting the accuracy of the proposed method. In
+                Sect. "Pattern analysis with pre-large concept", the conclusion of the proposed approach
+                is presented.                                                     
+                                                                                  
+                Related work                                                      
+                This section introduces closely related studies to the proposed method. The proposed
+                method, PIHAUPA, is an average utility-based framework that extracts patterns leverag-
+                ing the pre-large concept. Thus, we introduce related works on high utility pattern anal-
+                                                                                  
+                ysis and high average utility analysis and pattern analysis with pre-large concept. Table 1
+                summarizes related works associated with our proposed method, PIHAUPA. Tasks are
+                categorized into HAUP (High Average Utility Pattern), HUP (High Utility Pattern), and
+                HUSP (High Utility Sequential Pattern).                           
+                                                                                  
+                Table 1 Overview of previous research                             
+                Algorithm Task Base Pre-large Dynamic Notes                       
+                           structure methods Insertion                            
+                IMHAUI HAUP Tree   No    Yes   Requires excessive runtime to validate the
+                [36]                           candidate item sets.               
+                PRE-HAUIMI HAUP List Yes Yes   Relies on AUUB, a loose upper bound.
+                [41]               (Loose)                                        
+                LIMHAUP HAUP List  No    Yes   Requires costly pattern expansion process
+                [37]                           whenever new data arrive.          
+                SHAUPM HAUP List   No    Yes   Leverages the sliding window concept to
+                [38]                           analyze a portion of the data.     
+                IIMHAUP HAUP Indexed-List No Yes Requires costly pattern expansion process
+                [39]                           whenever new data arrive.          
+                PIHAUPA HAUP List  Yes   Yes   Leverages the pre-large concept with
+                (Proposed)         (Tight)     a tight re-scan condition, considering
+                                               maximum utility.                   
+                PRE-HUI HUP Non-specify Yes Yes Requires high complexity in candidate
+                [44]               (Loose)     pattern generation and management. 
+                PIHUP  HUP Tree    Yes   Yes   Requires an additional scan to validate
+                [45]               (Loose)     large patterns.                    
+                PIHUPM HUP List    Yes   Yes   Leverages the pre-large concept but does
+                [49]               (Loose)     not analyze high average utility patterns.
+                UMPD   HUP List    Yes   No    Operates in data deletion environments
+                [50]               (Loose)     and does not analyze high average utility
+                                               patterns.                          
+                PULM   HUP List    Yes   Yes   Operates in data modification environ-
+                [51]               (Loose)     ments but does not analyze high average
+                                               utility patterns.                  
+                                                                                  
+                                                                                  
+
+=== PAGE 5 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 5 of 34  
+                                                                                  
+                                                                                  
+                High utility pattern analysis                                     
+                                                                                  
+                Previous frequent pattern analysis methods have suffered from a major limitation. They
+                do not account for the quantity of each item. This limitation led to the introduction of
+                high utility pattern analysis [20]. By leveraging the anti-monotone property, frequent
+                pattern analysis improves efficiency through the reduction of the search space [21].
+                However, utility-based methods do not naturally satisfy this property. Therefore, over-
+                estimated utilities, such as the transaction weighted utility [22], are required to be intro-
+                duced to enable the pruning of unpromising patterns below a user-defined threshold.
+                HUI-Miner [22] introduced a list-based structure that eliminates the need for candidate
+                pattern generation with the concept of remaining utility, significantly improving perfor-
+                                                                                  
+                mance over previous methods. Following this, several utility pattern analysis methods
+                have expanded on the advantages of list structures. LIHUP [23] performs pattern analy-
+                sis with a single data scan in dynamic information systems using a list-based data struc-
+                ture. IIHUM [24], in contrast, utilizes an indexed list-based structure, enabling more
+                efficient pattern expansion by eliminating unnecessary item comparisons. While list
+                structures require extensive comparisons for pattern combinations, IIHUM enhances
+                efficiency by reducing this overhead. Various methods have also been proposed for high
+                utility pattern analysis in stream environments. IncDEFIM [25] addresses a key limita-
+                tion of traditional IHUM approaches, which struggle with varying internal utilities of
+                items. Incorporating data projection and transaction merging reduces the computa-
+                tional cost of data scans. Additionally, it leverages two tight upper bounds, local utility
+                and sub-tree utility, to efficiently prune unpromising patterns. ITHUI [26] is designed to
+                                                                                  
+                extract the top-k patterns from dynamic information systems. It leverages a list-based
+                data structure and requires only a single data scan. ILTFU-Miner [27] is also one of the
+                utility-driven pattern analysis methods. The method utilizes the fuzzy theory with tem-
+                poral property. ILDHUP [28] employs a DUI-list, an indexed list structure, and intro-
+                duces a decaying factor to decrease the importance of older data gradually. By applying
+                the concepts of the sliding window and time fading, RHUPS [29] analyzes the latest
+                meaningful patterns. The algorithm relies on a list-based structure to manage this anal-
+                ysis. Moreover, DSHUP [30] considers the arrival time of data by applying a decaying
+                factor, which assigns lower importance to older data. It also reduces the burden of accu-
+                mulated data using a sliding window approach. However, high utility pattern analysis still
+                suffers from a fundamental bias, which is the total utility of a pattern tends to increase
+                                                                                  
+                with its length. This bias makes longer patterns inherently more likely to be extracted
+                than shorter ones. Moreover, the use of a sliding window restricts the analysis to the cur-
+                rent window, preventing the capture of long-term patterns. To overcome this issue, the
+                high average utility pattern analysis was introduced.             
+                                                                                  
+                High average utility pattern analysis                             
+                Average utility analysis [31] evaluates patterns by dividing their utility by length. This
+                approach mitigates the influence of pattern length and provides a fairer alternative to
+                additive-based utility pattern analysis. However, high average utility pattern analysis
+                fails to satisfy the anti-monotone property, requiring upper bound values to reduce the
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 6 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 6 of 34  
+                                                                                  
+                                                                                  
+                                                                                  
+                search space. The first such measure, UB, was introduced in TPAU [32], allowing for
+                the pruning of super patterns when the UB of each pattern falls below the threshold.
+                However, since TPAU follows an Apriori-like approach, it requires extensive data scan-
+                ning and candidate generation, prompting the development of alternative approaches.
+                HAUI-tree reduces data scans by managing information in a tree structure, while MHAI
+                [33] improves efficiency using a list structure that processes pattern expansion results
+                in just two scans. LMHAUP [34] further optimizes performance with the TA-list, an
+                improved list structure. To enhance pruning efficiency beyond UB, TUB-HAUPM [35]
+                introduces two strict upper bounds, significantly reducing weak candidate patterns.
+                However, these methods are not well-suited for incremental data, where efficient han-
+                                                                                  
+                dling of new transactions is essential. IMHAUI [36] utilizes a tree-based pattern growth
+                method to discover HAUPs with minimum re-scan of incremental data. LIMHAUP [37]
+                adopts a list structure, maintaining item information efficiently by scanning newly added
+                transactions, outperforming tree-based methods in incremental environments. Given
+                its advantages, list-based methods have been widely explored. SHAUPM [38] employs a
+                SHAUP-list structure to store recent batch information using a sliding window approach,
+                improving performance via a pruning strategy based on remaining utility. Meanwhile,
+                IIMHAIUP [39] introduces the HAUI-list structure, efficiently analyzing HAUPs in
+                environments where data are inserted continuously and requires expeditious analysis.
+                However, these approaches still suffer from frequent re-scan processes or pattern expan-
+                sion operations whenever new dynamic data are inserted, leading to high computational
+                                                                                  
+                cost in incremental data environments. To address this issue, the proposed method uti-
+                lizes the pre-large concept to analyze HAUPs in incremental data to reduce the re-scan
+                process with pattern expansion operations with a tight re-scan condition.
+                                                                                  
+                Pattern analysis with pre-large concept                           
+                Dynamic data continuously evolves as data are inserted, modified, and deleted in real
+                time. To manage these variations efficiently, diverse studies with the pre-large con-
+                cept have been explored, high average utility pattern analysis predicated on the Apriori
+                method and the pre-large concept [40], high average utility pattern analysis relying on
+                the pre-large concept, incorporating the original re-scan condition [41], deletion-based
+                pattern analysis [42], and lead partial maximal utility upper bound techniques [43].
+                The pre-large concept utilizes two thresholds: an upper threshold ratio S u and a lower
+                                                                                  
+                threshold ratio S l, classifying patterns into small, pre-large, and large categories. Each
+                threshold is multiplied by the total utilities of all the scanned data, and the minimum
+                utility upper threshold, minutil u, and minimum utility lower threshold, minutil l, are
+                calculated. Patterns with a utility no less than minutil u are considered large patterns,
+                and pre-large patterns denote their utility between minutil u and minutil l. Small pat-
+                terns have utility values below minutil l, and pre-large patterns are considered poten-
+                tially large patterns depending on data updates, reducing unnecessary pattern expansion
+                operations. Several pre-large-based methods have been developed for different scenar-
+                ios. PRE-HUI [44] and PIHUP [45] handle transaction insertions, while HUIPRED [46]
+                and PRE-HUI-Del [47] focus on transaction deletions. PIHUP-MOD [48] extends this
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 7 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 7 of 34  
+                                                                                  
+                                                                                  
+                                                                                  
+                Table 2 Example of transactional database                         
+                             TID          Transaction (Item: IU) MU               
+                DB                                                                
+                  0                                                               
+                              T1          (A: 2), (B: 1), (C: 3) 5                
+                              T2          (C: 1), (D: 2)       6                  
+                              T3          (A: 6), (B: 1), (C: 4), (E: 5) 30       
+                              T4          (A: 4), (B: 4), (E: 3) 20               
+                              T5          (B: 1), (E: 2), (F: 2) 12               
+                DB                                                                
+                 1                                                                
+                              T6          (A: 3), (F: 3)       12                 
+                              T7          (C: 2), (E: 2)       12                 
+                DB                                                                
+                 2                                                                
+                              T8          (B: 5), (C: 1), (D: 3), (E: 2) 25       
+                              T9          (A: 1), (B: 3), (D: 1) 15               
+                Table 3 Example of external utility of each item                  
+                Item      A      B       C       D       E       F                
+                EU        2      5       1       3       6       4                
+                concept to modification scenarios, extracting HUPs in dynamic data. However, PIHUP
+                relies on a tree structure, requiring candidate pattern generation and using overesti-
+                mated utility values, making extracted large patterns uncertain as results. To overcome
+                these limitations, PIHUPM [49] introduces a list-based structure that allows direct util-
+                ity calculation without additional data scans and improves pattern classification effi-
+                ciency. UMPD [50] and PULM [51] discover HUPs within stream environments in
+                which data are deleted and modified, respectively. Pre-HUSPM [52] is a sequence pat-
+                tern analysis based on pre-large, which extracts the result by minimizing the frequency
+                of the re-scan process from an incremental environment. However, utility-driven pat-
+                tern analysis methods utilizing the pre-large framework have limitations, including the
+                impact of pattern length and the frequency of re-scan processes. To address these issues,
+                PIHAUPA is proposed to efficiently extract HUAPs in incremental data environments.
+                The proposed strategy strengthens the re-scan conditions, thereby reducing unnecessary
+                re-scans with pattern expansion operations and improving overall efficiency compared
+                to the aforementioned methods.                                    
+                Pre-large-based high average utility pattern analysis on dynamic systems
+                Preliminaries                                                     
+                In this section, fundamental definitions used within the pre-large concept for the
+                analysis of HAUPs are explained. An incremental databatabase DB is composed of
+                numerous transactions. All transactions are uniquely identified by their transaction
+                ID, TID. Each transaction, T n, contains a set of distinct items, formally expressed as
+                T n = { i 1 ,i 2 ,i 3 , ··· ,i m } . The entire database, DB, is the collection of these transac-
+                tions: DB = { T 1 ,T 2 ,T 3 , ··· ,T n } . Each transaction T n is a subset of the universal set
+                of all items, I. Tables 2 and 3 exhibit examples of an incremental database and exter-
+                nal utilities. The original database is denoted as DB 0, while DB 1 and DB 2 refer to
+                incremental updates. Previous studies [38, 39] have introduced the following defini-
+                tions. Let T q be a transaction, U(i p , T q ) represents the utility associated with an
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 8 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 8 of 34  
+                                                                                  
+                                                                                  
+                                                                                  
+                item i p in T q. It is obtained by the product of its internal utility IU i p , T q and its
+                external utility EU(i p ). Let P be a pattern, which is defined as a set of ( items ( )P I).
+                                                               ⊆                  
+                U(P, T q ) represents the cumulative utility of pattern P with respect to transactionT q.
+                It is determined through the aggregation of the utility of its constituent items, as pre-
+                sented: U(P,T q )= P                                              
+                               ⊆                                                  
+                                Tq∧ ip∈ P U i p , T q . Finally, the database-wide utility of
+                P is calculated as U∑(P)= Tq∈ DB (                                
+                                       ∧                                          
+                                        P                                         
+                                         ⊆                                        
+                                          Tq )U(P,T q ). The total utility of all items
+                presented in T q is termed its∑ transaction utility, TU(T q ). It is derived by summing
+                the utilities of all its constituent items: TU(T q )= ip∈ Tq U i p , T q . To consider
+                pattern length, the average utility of P in T q, denot∑ed as AU( (P, T q ), ) is obtained by
+                dividing the pattern utility by its length: AU(P,T q )= ip∈ P ∧ P ⊆ P Tq
+                                                          U(ip,T                  
+                                                              q                   
+                                                              )                   
+                                                               . For              
+                                                  ∑     | |                       
+                all transactions containing P, the total average utility of P, referred to as AU(P), is
+                computed as follows: AU(P)= P                                     
+                                      ⊆                                           
+                                       Tq∧ Tq∈ DB AU(P,T q ). The total utility of the
+                database, U(DB), is first calcula∑ted by summing transaction utilities of all transac-
+                tions in DB: U(DB)= Tq∈ DB TU(T q ). Based on this total utility, the minimum
+                utility threshold, denoted ∑as minutil, is then defined using a user-specified propor-
+                tion δ: minUtil=δ U(DB). Accordingly, A pattern P is categorized as a HAUP
+                             ×                                                    
+                if the average utility of P adherers to the condition AU(P) minutil. The maxi-
+                                                     ≥                            
+                mum utility of T q, denoted as MU(T q ), represents the highest utility among all items
+                in T q: MU(T q )=max ip∈ Tq U(i p ,T q ). The Average Utility Upper Bound, AUUB,
+                for P represents the sum of the maximum utilities of all transactions containing P. It
+                is computed as follows: AUUB(P)= P                                
+                                         ⊆                                        
+                                          Tq∧ Tq∈ DB MU(T q ). Let P be a pattern 
+                in T q whose items are sorted by their ∑AUUB values in ascending order, resulting in
+                the ordered sequence P = { i 1 ,i 2 ,... ,i p } . The Maximal Remaining item Utility,
+                MRU, of P refers to the highest utility among items appearing after i p, and calcu-
+                lated as follows: MRU(P,T q )=max U(i k ,T q ) i p i k i k T q . The Remain-
+                                       {     | ≺   ∧  ∈  }                        
+                ing item Number, RN, of P in T q, is denoted as RN(P, T q ), indicates the count of
+                items appearing after P in T q, where the transaction is sorted in ascending order of
+                AUUB: RN(P,T q )=n( ii P i T q ). The Maximal Remaining item Num- 
+                                { | ≻ ∧ ∈  }                                      
+                ber, MRN, expressed as MRN(P), is the highest RN across all transactions contain-
+                ing P: MRN(P)=max RN(P,T q ) T q DB P T q . The Maximum Average   
+                               {      |  ∈   ∧  ⊆  }                              
+                Upper bound, MAU, of P within T q is computed based on the following three cases to
+                refine pruning strategies.                                        
+                             U(P,Tq)+(M P R + N M (P R ) N× (P M ) RU(P,Tq)) MRU(P,Tq)>AU(P,Tq)
+                                  | |                                             
+                   MAU(P,Tq)=                                                    
+                             U(P,Tq) | + P M 0| + R 1 U(P,Tq) 0<MR M U R ( U P, ( T P q , ) T ≤ q) A = U 0 (P,Tq) (1)
+                                                                               
+                The MAU of P across all scanned transactions is computed as follows:
+                MAU(P)=   P                                                       
+                          ⊆                                                       
+                            Tq∈ DB MAU(P,T q ). The following definitions introduce funda-
+                mental definit∑ions utilized in previous approaches [40, 41], handling average utility of
+                each pattern with the pre-large concept.                          
+                Definition 1 (Pattern Classification) Patterns in a database DB are divided into three
+                categories utilizing two thresholds: S u (upper threshold ratio) and S l (lower threshold
+
+=== PAGE 9 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 9 of 34  
+                                                                                  
+                                                                                  
+                                                                                  
+                ratio), where S l <S u. Based on these thresholds, an arbitrary pattern P is classified into
+                one of the following types: large, pre-large, or small.           
+                   Large:AU(P) TU(DB) S                                           
+                                       u                        (2)               
+                             ≥      ×                                             
+                   Pre large:TU(DB) S >AU(P) TU(DB) S                             
+                                    u                l          (3)               
+                      −          ×         ≥       ×                              
+                   Small:TU(DB) S >AU(P)                                          
+                                l                               (4)               
+                              ×                                                   
+                For example, suppose that the average utility of an arbitrary patterns X and Y is calcu-
+                lated as 25 and 15, and the S u and S l is denoted as 20 and 10, respectively. Pattern X is
+                regarded as a large pattern, and pattern Y is considered a pre-large pattern.
+                Definition 2 (Original Re-Scan Condition) When a newly inserted database has the
+                potential to enlarge an existing small pattern into a large pattern, a re-scan is required. Let
+                ID represent the set of transactions appended after the latest re-scan, and OD denote
+                the set of transactions processed in the previous re-scan, the original re-scan condition
+                is expressed as follows:                                          
+                           S  S                                                   
+                   TU(ID)  u − l TU(OD)                                           
+                                                                (5)               
+                         ≥ 1 S  ×                                                 
+                              u                                                   
+                            −                                                     
+                The method utilizing the condition scans all accumulated databases if the re-scan condi-
+                tion is satisfied. For example, suppose that TU(ID) and TU(OD) are 15 and 30, and
+                S u and S l are 0.5 and 0.3, respectively. In this case, since TU(ID) is no less than 12,
+                the re-scan condition is satisfied, and the re-scan process for all databases is performed.
+                Table 4 summarizes the principal symbols used in Sect. "High utility pattern analysis".
+                Table 4 Summary of principal symbols                              
+                Symbol Meaning                 Level Range                        
+                DB   An incremental database, DB=                                 
+                                    {                                             
+                                    T1,T2,T3,                                     
+                                          ···                                     
+                                            ,Tn                                   
+                                             }                                    
+                                                     Global                       
+                I    A set of unique items in DB, I=                              
+                                    {                                             
+                                     i1,i2,i3,                                    
+                                         ···                                      
+                                           ,im                                    
+                                             }                                    
+                                                     Global                       
+                ID   A set of transactions appended after the latest re-scan Global
+                OD   A set of transactions processed in the previous re-scan Database Global
+                TU(DBS)um of transaction utility in DB Construction               
+                Su, Sl Upper and lower threshold ratios Analysis                  
+                Tq   An arbitrary transaction in DB, Tq I Global                  
+                                     ⊆                                            
+                TU(Tq)Transaction utility of Tq      Construction                 
+                MU(Tq)Maximum utility of Tq          Construction/Restructuring   
+                RN(P, TRqe)maining item number of P in Tq Transaction Restructuring
+                MRU(P,MTaqx)imal remaining item utility of P in Tq Restructuring/Analysis
+                AU(P, TAqv)erage utility of P inTq   Analysis                     
+                MAU(PM,Taqxi)mum average upper bound of P in Tq Analysis          
+                P    An arbitrary pattern in DB,P I  Construction                 
+                                   ⊆                                              
+                U(P) Total utility of P inDB         Construction                 
+                AUUB(PAv)erage utility upper bound of P Pattern Construction/Restructuring
+                MRN(PM)aximal remaining item number of P Restructuring/Analysis   
+                AU(P) Total average utilit of P      Analysis                     
+                MAU(PM)aximum average upper bound of P Analysis                   
+
+=== PAGE 10 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 10 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 1 Overall architecture of PIHAUPA                            
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 2 The structure of PIHAUP-List                               
+                Overall procedure of pre-large-based high average utility pattern analysis
+                This section presents the general architecture of the proposed PIHAUPA method. The
+                                                                                  
+                overall process illustration is depicted in Fig. 1. Initially, for the original data, PIHAUPA
+                scans them once to construct the list structures for the individual items and correspond-
+                ing transaction information. Next, through the restructuring procedure, PIHAUPA
+                arranges the individual item lists in AUUB ascending order to maximize early pruning
+                of unpromising patterns. This AUUB ascending order also serves as the criteria for cal-
+                culating the MRU and MRN values, which is also performed during this step. Follow-
+                ing the restructuring step, PIHAUPA recursively combines k-length patterns to generate
+                (k + 1)-patterns, starting with the single-length items. During this phase, the extracted
+                pre-large and large patterns are inserted into the pattern tree and pruning strategies
+                regarding AUUB and MAU are exploited to reduce the search space. Once the pattern
+                tree is built completely, the list structures are erased from memory to optimize space.
+                                                                                  
+                Thereafter, when new data arrive, PIHAUPA tests the tight re-scan condition to deter-
+                mine whether a data re-scan is necessary. If the condition is true, the current pattern
+                tree is destroyed, and the above procedures are performed for the entire data reflecting
+                the new records. If not, the current pattern tree is updated in accordance with the new
+                records. Specifically, the managed utility values are updated by reflecting the values in
+                the inserted data. Finally, in order to extract large patterns, PIHAUPA traverses the pat-
+                tern tree to compare the AU values with the upper threshold, after which the result set
+                is reported to the user.                                          
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 11 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 11 of 34 
+                                                                                  
+                                                                                  
+                Construction process of global data structure                     
+                                                                                  
+                This section explains the data structure used in PIHAUPA, PIHAUP-List, and the con-
+                struction procedure for the global PIHAUP-List. The global PIHAUP-List stores infor-
+                mation regarding patterns with 1-length and is constructed by performing a single scan
+                of the data. For efficiency, this global list is removed from memory after the pattern
+                expansion procedure and constructed again when the tight rescan condition for addi-
+                tional data is satisfied. Lists for patterns with 2-length or more are built as conditional
+                lists during the pattern expansion procedure by combining existing list nodes in a DFS
+                manner and are removed after use. A node stores a summary of the characteristics of a
+                pattern, which includes sumU, the utility of a pattern in the entire data; and MRN, the
+                                                                                  
+                maximum number of combinable items at the current level. The AUUB field of each
+                pattern is included for illustrative purposes, while it is omitted in the implementation
+                for efficiency. It also manages the information of transactions where a pattern appeared,
+                represented in entry units, and is composed of the following: TID; U, the pattern util-
+                ity in the transaction; and MRU, the maximal remaining utility a pattern can be com-
+                bined with in the transaction. The structure of the PIHAUP-List is displayed in Fig. 2.
+                Nodes in the global PIHAUP-List are arranged in AUUB ascending order for pattern
+                expansion efficiency. This is to cause patterns with low AUUB values to be extended
+                early, and since patterns that are extended early are combined with other patterns the
+                most, pruning can be maximized if patterns with low AUUB values are processed first.
+                However, since PIHAUPA is a single-scan-based method that operates in incremental
+                environments, nodes cannot be sorted during the initial data structure construction
+                                                                                  
+                procedure. Also, values that require the sorting order, MRN and MRU, cannot be cal-
+                culated during this step. Therefore, the sorting of nodes and the calculation of MRN
+                and MRU values are processed during the restructuring procedure.  
+                 The global PIHAUP-List is constructed through the scanning of transactions in order.
+                First, MU of the scanned transaction is determined. Next, items in the transaction are
+                processed. If the node for the current item does not occur in the global list, a new one
+                is generated and added to the list, and the corresponding transaction entry is inserted.
+                The sumU of the node is set to the item utility of the transaction. The transaction entry
+                is created using the TID and the utility of the item in the transaction. If the node for
+                the current item exists in the global list, a transaction entry is inserted in the same way,
+                and the sumU value of the node is updated by adding the item utility of the transac-
+                                                                                  
+                tion. Once this procedure is carried out for the entire data, the global list construction is
+                finished.                                                         
+                                                                                  
+                Example 1 This example represents the construction procedure of the global PIHAUP-
+                List through a single scan of Table 2. PIHAUPA first scans T . MU(T ) is calculated as 5
+                                                  1    1                          
+                and is used to calculate the AUUB of items. For the first item in T , A, since its node does
+                                                     1                            
+                not occur in PIHAUP-List, a new one is generated and inserted. Here, MU(T ) added to
+                                                            1                     
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 3 Constructed global PIHAUP-List for DB                      
+                                    0                                             
+                                                                                  
+                                                                                  
+
+=== PAGE 12 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 12 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                the AUUB value of A, which is 5, and sumU of the list is set to U(A, T ), which is 4. Next,
+                                                       1                          
+                a transaction entry for T , <T , 4, 0>, is inserted into the node. When scanning item C in
+                              1  1                                                
+                T , its node already exists in PIHAUP-List. Hence, a new node for C is not generated. The
+                 2                                                                
+                sumU value of the existing node C is updated, and a transaction entry for T is inserted.
+                                                           2                      
+                sumU is incremented by U(C, T ), which is 1. As a result, the two values become 4 and 11,
+                                  2                                               
+                respectively. Additionally, a transaction entry of < T , 1, 0 > is inserted. Once the original
+                                             2                                    
+                data is scanned and performed, the construction procedure is complete. The fully con-
+                structed global PIHAUP-List is shown in Fig. 3.                   
+                Restructure process of global data structure                      
+                This section explains the process for restructuring the global PIHAUP-List. Restructur-
+                ing is done by arranging the global list nodes in ascending order of AUUB and calculating
+                the MRU and MRN of the nodes. The reason for arranging the list in AUUB ascending
+                order is to maximize pruning during the early stage of pattern expansion, during which
+                pattern extension occurs frequently, by allowing patterns with low AUUB values to be
+                extended first. Moreover, the MRN and MRU values calculated during the restructur-
+                ing procedure are used for calculating MAU during the pattern expansion procedure,
+                which is a tight upper bound than AUUB. After sorting the global list in AUUB ascend-
+                ing order, it is traversed in reverse order to calculate the MRN and MRU values of nodes.
+                During this process, a temporary table consisting of TID, MRU, and MRN is used to
+                facilitate calculations. When visiting transaction entries of nodes, the algorithm checks
+                if an entry in the temporary table exists that has the same TID value. If it does not exist,
+                an entry < T , U(i , T ), 1 > is inserted into the temporary table. Here, i and T are the
+                       k  m k                            m   k                    
+                current visiting item and TID, respectively. If it exists, the MRU of the entry is arranged
+                in the MRU of the transaction entry of the node. Next, the MRN of the temporary table
+                entry is compared with the MRN of the node, and the larger value is stored in the MRN
+                of the node. Lastly, the MRU value of the temporary table entry is compared with the
+                U value in the transaction entry of the node. The larger value is stored in the former,
+                and the MRN value of the temporary table entry is increased by 1. Once this process is
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 4 Restructuring global PIHAUP-List with temporary table      
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 13 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 13 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                repeated for all nodes in the global list, the restructuring procedure is complete, and the
+                data structure is ready for the pattern expansion process.        
+                                                                                  
+                Example 2 This example shows how the global PIHAUP-List in Fig. 4 is restructured in
+                PIHAUPA. PIHAUPA first sorts the global list in ascending order of AUUB, with the fol-
+                lowing order of items: D(6) F(12) C(41) A(55) E(62) B(67). Next,  
+                                 ≺     ≺     ≺     ≺     ≺                        
+                the algorithm calculates the MRN and MRU values of list nodes using a temporary table.
+                This procedure can be observed in Fig. 4. First, node B is processed. Since the temporary
+                table is currently empty, entries with values < TID, U, 1 > corresponding to all transaction
+                entries in node B are inserted into the temporary table. Next, for the first transaction
+                entry of node E, since the entry for TID T is contained in the temporary table, the MRU
+                                        3                                         
+                value of the entry, 5, is arranged in the MRU of the transaction entry. Also, since the MRN
+                value 1 in the temporary table entry is greater than the MRN value 0 in node E, the MRN
+                of the node is set to 1. Lastly, the MRN of the temporary table entry is incremented by 1,
+                and its MRU value is updated to 30 since the previous value of 5 is less than the U value of
+                30. Repeating this process for all global list nodes completes the restructuring procedure.
+                Analysis of high average utility patterns based on pre-large concept
+                This section explains how PIHAUPA analyzes HAUPs using the pre-large approach.
+                For efficiency of the pattern expansion process, PIHAUPA uses a pattern expansion
+                based on DFS and a pruning technique employing a tight upper bound of the AU value
+                called MAU. The algorithm traverses the PIHAUP-List and calculates the AU value of
+                patterns. If the value is equal to or bigger than minutil l, the pattern is a large or pre-
+                                                                                  
+                large pattern and is added to the pattern tree. When a pattern is inserted into the pat-
+                tern tree, its items are arranged in descending order of AUUB, and this is to increase
+                the compactness of the tree by placing items that are more likely to appear frequently
+                at the top. Also, the utility value is stored instead of AU for trivial accumulation when
+                new data arrives. Next, the MAU value of the pattern is calculated to check whether it
+                is expandable or not. If a pattern is extendable, or, in other words, its MAU value is no
+                less than minutil l, then a conditional PIHAUP-List with the corresponding pattern as
+                a prefix is constructed, and the pattern expansion process is performed recursively in a
+                DFS fashion using conditional lists. Conditional PIHAUP-Lists are created by combining
+                the node of the prefix pattern with nodes that occur after the prefix node in the current
+                list. When creating a node for a conditional list, transaction entries of the prefix pattern
+                                                                                  
+                node and the node of the pattern to be combined with are compared to discover entries
+                with the equal TID. For the transaction entries of the created node, the U field is set as
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 5 The pattern expansion procedure with pruning techniques    
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 14 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 14 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                the summation of the U values of the two transaction entries subtract the U value of the
+                transaction entry of the common prefix pattern, and the MRU field is set as the larger
+                MRU value of the two transaction entries. Next, the sumU field of the node is set as the
+                summation of the U values of its transaction entries. Lastly, the MRN field is set to the
+                lower MRN value of the two nodes being combined. Once all patterns are visited and
+                extended, a complete set of large and pre-large patterns is stored in the pattern tree. By
+                traversing the pattern tree, HAUPs are extracted and returned to the user.
+                                                                                  
+                Example 3 This example illustrates the pattern expansion procedure of PIHAUPA.
+                Assuming the upper and lower threshold are given as 23% and 10%, minutil u and
+                minutil l are set as 32.43 and 14.1, respectively. This example shows the pattern expan-
+                sion procedure starting from node C, illustrated in Fig. 5; however, the other nodes are
+                                                                                  
+                also processed in the same manner. PIHAUPA first calculates AU value of pattern C. Since
+                AU(C)=8<minUtil l, pattern C is not appended into the pattern tree. On the other
+                hand, its MAU value is calculated as MAU(C)= 3+15 +0+ 4+90 =28, and since it
+                                               4      4                           
+                is no less than minutil l, pattern C is selected as a prefix and pattern expansion takes
+                place. To create the conditional PIHAUP-List for pattern C, node C is combined with the
+                nodes that appear after it, nodes A, E, and B. In the case of node A, the common transac-
+                tion entries are T 1 and T 3, and therefore transaction entries <T 1, 7, 5> and <T 3, 16, 30>
+                are inserted into node CA. Accordingly, the sumU field of node CA is configured as 23.
+                Lastly, the MRN value of the node is set as the lower MRN value of the nodes that are
+                combined, 2. Node C is then combined with node E in a similar manner to create node
+                CE. This process is echoed to combine nodes CA and CE. Note that the common prefix
+                pattern utility of 4 for T is subtracted from the calculation of U. For node CAE, since
+                              3                                                   
+                AU(CAE)=15.333 minutil l, pattern CAE is inserted into the pattern tree. Patterns
+                             ≥                                                    
+                CE and CAE are not extended due to MAU pruning. After all patterns are processed
+                this way, the pattern tree construction is complete, and pre-large and large patterns are
+                extracted through traversal of the pattern tree.                  
+                Update process with re-scan condition                             
+                In this section, a description of how PIHAUPA handles environments where data inser-
+                tions continue to occur is introduced. The following definition describes a re-scan con-
+                dition that is tighter than the original re-scan condition, which allows the proposed
+                PIHAUPA to extract results by optimizing the re-scan process for all the accumulated
+                data.                                                             
+                                                                                  
+                Definition 3 (Tight Re-Scan Condition). The tight re-scan condition indicates whether a
+                small pattern from the previous re-scan can transition into a large pattern with the inser-
+                tion of newly scanned data. Contrary to the traditional definition utilized in prior meth-
+                ods, the tight re-scan condition leverages the aggregate MU across the scanned set of
+                transactions, as the maximum average utility of a pattern in a transaction cannot exceed
+                the MU value. The refined re-scan condition is formulated as follows:
+                                      TU(ID)                                      
+                   MU(ID)   (S  S )/(1        S )  TU(OD)                         
+                         ≥   u − l  − MU(ID) × u ×              (6)               
+                           {                    }                                 
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 15 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 15 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                If the MU for ID satisfies the tight re-scan condition, it means that small patterns
+                contained in the previously scanned data have the potential to become large patterns.
+                Therefore, the entire data including ID and OD is scanned again to ensure the accurate
+                extraction of result patterns and prevent any pattern loss. Moreover, when the re-scan
+                condition is fulfilled, the pattern tree is initialized and is reconstructed for the infor-
+                mation of the re-scan process. The newly constructed pattern tree is utilized until the
+                re-scan condition is fulfilled from the following data insertions. Conversely, if this con-
+                dition is not met, Lemma 1 guarantees that no small pattern can become a large pat-
+                tern, thus preventing pattern loss without performing a costly re-scan. The fundamental
+                theoretical advantage of this proposed tight re-scan condition lies in its utilization of a
+                                                                                  
+                more stringent mathematical boundary compared to the original re-scan condition used
+                in prior methods. The original condition evaluates the possibility of a re-scan based on
+                the TU(ID) of the new data. This value loosely overestimates the potential for a small
+                pattern to transition into a large pattern. In contrast, the proposed condition employs
+                MU(ID). The MU(ID) value serves as a much tighter theoretical upper bound on
+                the largest average utility values that a pattern can gain from ID. Since the relationship
+                MU(ID)  TU(ID) is always satisfied, the use of MU(ID) provides a tighter cri-
+                       ≤                                                          
+                terion than TU(ID). This theoretical superiority, which guarantees that the proposed
+                method invokes a re-scan no more frequently than methods using the original condition,
+                is formally demonstrated in Lemma 2.                              
+                Lemma 1 If an arbitrary pattern P that was a small pattern in OD can become a large
+                pattern in the entire data after the incremental data is added, OD ID, then the tight
+                                                      ∪                           
+                re-scan condition must be true.                                   
+                                                                                  
+                Proof Assume that all the data in the previous re-scan process, those after the previ-
+                ous re-scan process, and those from the original data to the recently scanned incremen-
+                tal data are described as OD, ID, and OD ID=DB, respectively. The transaction
+                                          ∪                                       
+                utilities of each data are described as TU(OD), TU(ID), and TU(DB), respectively.
+                For an arbitrary pattern P, the average utilities of each data are defined as AU(P,OD),
+                AU(P,ID), and AU(P,DB), respectively. Moreover, since AU(P,DB) is configured
+                as the sum of average utilities of P in OD and ID, the AU(P,DB) is computed as
+                follows: AU(P,DB)=AU(P,OD)+AU (P,ID). The proof first establishes that if
+                the tight re-scan condition is false, the small pattern cannot become the large pattern.
+                Assume the tight re-scan condition according to Definition 5 is false. Therefore, the fol-
+                lowing equation holds:                                            
+                                     TU(ID)                                       
+                   MU(ID)<  (S                                                    
+                             u −                                                  
+                               S l)/(1                                            
+                                    − MU(ID) ×                                    
+                                             S                                    
+                                                ×                                 
+                                                  TU(OD)                          
+                          {(                 u)}                                  
+                                      TU(ID) S                                    
+                          ⇒ MU(ID) × 1 − MU(I × D) u <(S u − S l) × TU(OD) (7)    
+                                   (           )                                  
+                            MU(ID) S  TU(ID)<S  TU(OD) S  TU(OD)                  
+                                   u         u         l                          
+                          ⇒      −  ×         ×      −  ×                         
+                            S  TU(OD)+MU(ID)<S  (TU(OD)+TU(ID))                   
+                             l               u                                    
+                          ⇒  ×                ×                                   
+                Furthermore, since pattern P is small in OD, it is expressed as follows by Definition 3.
+                   AU(P, OD)<S TU(OD)                                             
+                             l                                  (8)               
+                              ×                                                   
+
+=== PAGE 16 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 16 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                Moreover, the maximum utility of P obtained in ID cannot exceed the sum of the max-
+                imum utility of each transaction contained in ID. That is, the following holds.
+                   AU(P, ID) MU(ID)                                               
+                                                                (9)               
+                          ≤                                                       
+                Equations (8) and (9) can be summarized as follows.               
+                   AU(P, DB)=AU(P,OD)+AU (P,ID)<S TU(OD)+MU (ID)                  
+                                              l                 (10)              
+                                               ×                                  
+                Using Eqs. (7) and (10), the following equation is derived:       
+                   AU(P, DB)<S  TU(DB)                                            
+                             u                                  (11)              
+                              ×                                                   
+                Therefore, when the tight re-scan condition is false, no small pattern can become large.
+                By contraposition, if a small pattern can become a large pattern, the tight re-scan condi-
+                tion is always true, which guarantees that no pattern loss occurs∎.
+                Lemma 2 The number of occurrences for the pattern expansion process in the proposed
+                method utilizing the tight re-scan condition is always no greater than that of the occur-
+                rences in the existing method utilizing the original re-scan condition.
+                Proof Suppose that the total utilities in data derived after the previous re-scan process
+                and that in data appearing in the previous re-scan process. Let the total pattern expan-
+                                                                                  
+                sion process occurring in the proposed method that utilizes the tight re-scan condition
+                be called N PM, and let that pattern expansion process occurring in the existing method
+                that utilizes the original re-scan condition be called N EM. The two methods perform
+                scan operations on the original data. However, for data insertions that occur afterward,
+                the re-scan and pattern expansion processes depend on whether the re-scan condition is
+                fulfilled. The following inequalities are denoted to exhibit that the terms to the right of the
+                inequalities match the tight and original re-scan conditions, respectively.
+                                                                                  
+                              TU(ID)                                              
+                   MU(ID)  (1       S ) (S S ) TU(OD)                             
+                         ×  − MU(ID) u ≥ u − l ×                (12)              
+                   TU(ID) (1 S ) (S  S ) TU(OD)                                   
+                              u    u  l                         (13)              
+                         ×  −   ≥   −  ×                                          
+                Equation (12) represents the tight re-scan condition, which is an algebraic rearrange-
+                ment of the definition provided in Eq. (6), while Eq. (5) shows the original re-scan
+                condition. Given that the right-hand sides of both inequalities are identical, a smaller
+                value on the left-hand side indicates a stricter re-scan condition. Since the relation
+                MU(ID)  TU(ID) is always satisfied, the left sides of the two conditions are com-
+                       ≤                                                          
+                pared as follows.                                                 
+                              TU(ID)                                              
+                   MU(ID)  (1       S )=MU(ID) TU(ID) S                           
+                         ×  − MU(ID) u       −      ×  u        (14)              
+                           TU(ID)                                                 
+                   U(ID)                                                          
+                       ×                                                          
+                        (1                                                        
+                          − M                                                     
+                               U(ID)S u)                                          
+                                     ≤                                            
+                                      TU(ID)                                      
+                                           −                                      
+                                            TU(ID)                                
+                                                 ×                                
+                                                  S u=TU(ID)                      
+                                                         ×                        
+                                                           (1                     
+                                                            −                     
+                                                             S u) (15)            
+                Accordingly, it is verified that the value of the left term for the tight re-scan condition is
+                no greater than that of the original re-scan condition. Therefore, depending on the upper
+                threshold value, S u, a situation occurs where the original re-scan condition satisfies the
+
+=== PAGE 17 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 17 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 6 Comparison of the process with tight and original re-scan after scanning DB
+                                                     1                            
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 7 Update process of pattern tree                             
+                                                                                  
+                                                                                  
+                Table 5 Comparison of patterns with tight and original re-scan conditions
+                Large and pre-large patterns of DB 0                              
+                Pattern   AE       E        EB       B       CAE                  
+                Type      Large    Large    Large    Large   Pre-large            
+                AU        34       60       45       35      15.333               
+                Pattern variation after scanningDB 1with tight re-scan condition  
+                Pattern   AE       E        EB       B       CAE                  
+                Type      Pre-large Large   Large    Pre-large Small              
+                AU        34       72       45       35      15.333               
+                Pattern variation after scanningDB 1with original re-scan condition
+                Pattern   E        EB       EBA      EA      EC                   
+                Type      Large    Large    Pre-large Pre-large Pre-large         
+                AU        72       45       31       34      24                   
+                condition, but the tight re-scan condition does not. which leads to N PM N EM. As
+                                                           ≤                      
+                a result, the proposed method with the tight re-scan condition enables more efficient
+                management of the occurrences of the pattern expansion and re-scan processes than the
+                method employing the original re-scan condition. ∎                
+                Example 4 This example explains the distinction between the tight and the original
+                re-scan condition during the processing of incremental data insertion. The incremental
+                database DB 1 comprises transactions T 6 and T 7, resulting in TU(DB 1 ) of 32 and a
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 18 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 18 of 34 
+                                                                                  
+                                                                                  
+                MU(DB 1 ) of 24. Under the premise that TU(DB 0 )=141, the evaluation of the tight
+                                                                                  
+                re-scan condition yields 24< (0.23 0.1)/(1 32 0.23) 141=26.438. The
+                                       −     − 24 ×  ×                            
+                proposed method determines that{ the comprehensive re-scan is u}nnecessary. As a result,
+                the method incorporates the incremental database into the existing pattern tree through
+                a scanning process. Fig. 6 represents the pattern tree formed through the tight re-scan
+                condition upon completion of the DB 1 scan. Fig. 7 illustrates the process of updating the
+                pattern tree. The pattern tree is traversed for each transaction in DB 1. Since U(A)=6,
+                pattern A is searched for in the pattern tree, and its utility is updated. Therefore, the utility
+                of A stored in the pattern tree is 30 = 24 + 6. Similarly, patterns E and CE also increase
+                by 12 and 14, respectively. The updated large and pre-large patterns, obtained using the
+                tight re-scan condition subsequent to processing DB 1, are displayed in Table 5. As DB 1
+                is inserted. The incorporation of DB 1 necessitates the recalculation of minutil l and
+                minutil u values leading to a pattern type transition for specific patterns. Consequently,
+                patterns AE and B are reclassified as pre-large patterns, whereas CAE is categorized as
+                a small pattern. Contrarily, the right side of Fig. 6 shows the results of the original re-scan
+                condition. where the formula is computed as follows: 32> 0 1 .23 0−.2 0 3 .1 × 141=23.805.
+                                                     −                            
+                Upon satisfying the original re-scan condition, a full scan of the entire dataset (including
+                DB 1) was triggered to construct the global PIHAUP-List and pattern tree from scratch.
+                Table 5 confirms that the identified large patterns, namely HAUPs, and their corre-
+                sponding AU values remain identical across different re-scan conditions.
+                Algorithm descriptions of PIHAUPA                                 
+                                                                                  
+                In this section, a detailed explanation of the algorithms utilized in PIHAUPA is intro-
+                duced. Algorithm 1 requires transactional data along with lower and upper threshold
+                ratios as input and outputs a set of HAUPs. Initially, two variables, rTU and iTU, are
+                set as 0. These indicate the total utility sum from the last rescan and the utility sum of
+                transactions added after the last rescan, respectively (Line 1). The algorithm scans the
+                transactional data and constructs the global PIHAUP-List by executing the Construct
+                and Restructure procedures (Lines 2–3). After that, the total utility of scanned data is
+                added to rTU (Line 4). Once the global list is constructed and restructured, it performs
+                the Pattern expansion procedure, where pre-large and large patterns are extracted and
+                                                                                  
+                stored in the pattern tree (Line 5). When incremental data is appended, iTU is updated
+                with the utility of the newly added transactions, and the algorithm checks a tight re-
+                scan condition. (Lines 6–9). If it is satisfied, the current global list and pattern tree are
+                discarded (Line 10). Then, similar to the initial data processing, the global list is recon-
+                structed, and rTU is updated (Lines 11–13). The reconstructed global list is assigned
+                to the Pattern expansion procedure, and the extracted pre-large and large patterns are
+                inserted into the new pattern tree (Line 14). Since the re-scan process occurs, iTU and
+                iDB are reset to 0 and null, respectively (Line 15). If the tight re-scan condition is not
+                fulfilled, PIHAUPA bypasses the costly full pattern expansion. Instead, the algorithm
+                focuses on updating the utility values within the existing pattern tree (Lines 16–26). In
+                the process, it scans DB i .ForeachtransactionT k inDB i, the algorithm traverses all
+                                                                                  
+                available patterns in T k (Lines 17–18). For each pattern P, the traversal CurrentNode
+                is reset to the root node of the PT (Line 20). Then, it checks whether the CurrentNode
+                has a child corresponding to the item i p (Line 21). If this path exists (Lines 22–24), the
+                algorithm adds the utility of the pattern P to the utility field of the corresponding child
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 19 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 19 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                node and then updates the CurrentNode to the TargetNode. Conversely, if no such
+                child node exists (Line 25), the algorithm breaks the loop for the current pattern (Line
+                26). This update mechanism preserves the existing order and structure of the tree. After
+                this loop is completed, all values in PT reflect the inclusion of DB i. At this step, the
+                HAUP set is extracted by traversing the updated PT and re-evaluating each node using
+                the new total utility to calculate the upper                      
+                                                                                  
+                Algorithm 1 PIHAUPA                                               
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Algorithm 2 PatternExpansion                                      
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                 threshold. Nodes whose updated utility are no less than the upper threshold are
+                included in the finalHAUP (Line 27).                              
+                                                                                  
+                Algorithm 2 presents the PatternExpansion procedure of PIHAUPA. This procedure
+                requires a conditional PIHAUP-List, a prefix pattern from the previous level, and the
+                PIHAUP-List node corresponding to the prefix pattern as input parameters. The output
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 20 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 20 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                is a collection of pre-large and large patterns. The process begins by traversing the condi-
+                tional PIHAUP-List in sequential order, appending each visited item to the prefix pattern
+                (Lines 1–2). Then, the AU of the prefix pattern is calculated. If this value is no less than
+                minUtil l, the pattern and the AU of the pattern are assigned to the result set (Lines 3–4).
+                To determine whether further pattern expansion is feasible, the MAU of the current pat-
+                tern is evaluated. The extension process continues if MAU is no less than minUtil l (Lines
+                5–6). At this stage, nodes representing patterns appear after the currently visited pat-
+                tern is examined, and a pattern combination procedure is performed. The results from
+                this procedure are utilized to construct the conditional PIHAUP-List of the next pattern
+                expansion level (Lines 9–13). If the number of the newly created conditional list exceeds
+                                                                                  
+                one, it is passed along with the prefix pattern and prefix pattern node into a recursive call
+                of the PatternExpansion procedure for further pattern expansion (Lines 14–15). To facili-
+                tate pattern extension with the next item, the most recently added item is removed from
+                the prefix pattern (Line 16). Once the PatternExpansion process is complete, the final set
+                of extracted large and pre-large patterns is returned (Line 17).  
+                                                                                  
+                Complexity analysis                                               
+                This section analyzes the complexity of the proposed PIHAUPA algorithm by compar-
+                ing it with PRE-HAUIMI [41]. The complexity of PIHAUPA is divided into the initial
+                pattern tree construction phase and the incremental data update phase. This analysis
+                focuses specifically on the complexity of the incremental data update phase under dif-
+                                                                                  
+                ferent re-scan conditions. For analysis, we define the total number of accumulated trans-
+                actions to date as D, the number of newly inserted incremental transactions as d, the
+                average number of items per transaction as avg(T), and the number of patterns stored
+                in the pattern tree as PT . The complexity during incremental updates is divided into
+                             | |                                                  
+                two cases based on whether the re-scan condition is satisfied. The first case occurs when
+                the re-scan condition is not satisfied, which is the most ideal case for both PIHAUPA
+                and PRE-HAUIMI. In this case, the proposed PIHAUPA scans the newly inserted data d
+                and updates the existing stored pattern information. This process requires complexity of
+                O(d  avg(T)+PT ). On the other hand, PRE-HAUIMI scans the new transactions
+                   ×      |  |                                                    
+                d to construct the AUL-structures of d and merge them with the AUL-structures of D,
+                which requires the complexity of O(d avg(T)). After that, PRE-HAUIMI performs
+                                       ×                                          
+                the pattern expansion procedure. Let | P exp| denote the number of expandable patterns
+                visited during the pattern expansion. For each pattern extension, two AUL-structures
+                are compared by traversing both lists, which incurs O(2(D+d)) complexity. Hence,
+                the total complexity of pattern expansion is O(2(D+d) × | P exp| ), and the overall
+                complexity of PRE-HAUIMI is O(d × avg(T)+2(D+d) × | P exp| ). Since the num-
+                ber of expandable patterns is no less than the number of patterns in the pattern tree,
+                | PT |≤ | P exp| . Thus, PIHAUPA achieves superior complexity than PRE-HAUIMI in
+                this first case. Conversely, the second case occurs when the re-scan condition is satisfied.
+                When this case occurs, both methodologies must discard the previously stored pattern
+                information in the pattern tree or AUL-structures and perform pattern expansion and
+                structure generation on the entire accumulated data D+d. This operation involves scan-
+                ning the entire data D+d and incurs the full expansion cost 2(D+d) × | P exp| , result-
+                ing in a very large cost of O(((D+d) avg(T))+2(D+d) P exp ). PRE-HAUIMI
+                                      ×             × | |                         
+                uses a loose boundary called TU(d) for newly inserted data. In contrast, PIHAUPA uses
+                                                                                  
+
+=== PAGE 21 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 21 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                a tight boundary based on MU(d), as mathematically proven in Lemma 2 of this paper.
+                Thus, based on Lemma 2, the condition used by PRE-HAUIMI theoretically triggers the
+                second case no less often than that of PIHAUPA. Consequently, by theoretically maxi-
+                mizing the occurrence frequency of the first case and minimizing the occurrence of the
+                second case, PIHAUPA achieves significant superiority in average complexity compared
+                to PRE-HAUIMI.                                                    
+                                                                                  
+                Performance evaluation                                            
+                Experimental environment and datasets                             
+                In this section, the experimental environment is described for the performance evalu-
+                                                                                  
+                ation. To evaluate the proposed PIHAUPA, several state-of-the-art methods, PRE-
+                HAUIMI [41], PIHUP [45], PIHUPM [49], UMPD [50], and PULM [51] are introduced.
+                The proposed PIHAUPA is designed for a stream environment where data insertion
+                occurs. It employs a tight re-scan condition for a more refined count of re-scan pro-
+                cesses to efficiently identify results. PRE-HAUIMI is the state-of-the-art pre-large-based
+                approach to extract HAUPs designed for incremental data environments, using a
+                loose re-scan condition compared to PIHAUPA. Both PIHUP and PIHUPM represent
+                state-of-the-art pre-large–based approaches for incremental data in high utility pat-
+                tern analysis. PIHUP extracts HUPs in incremental environments by utilizing a TWU-
+                based re-scan condition within a tree-based data structure. Since it was not originally
+                designed to extract HAUPs, we modified its tree structures to incorporate AUUB
+                                                                                  
+                instead of TWU for the extraction of both pre-large and large patterns. Similarly, PIH-
+                UPM integrates the pre-large concept employing the original re-scan condition for high
+                utility pattern analysis and operates in the incremental environments. Both PIHUP and
+                PIHUPM represent state-of-the-art pre-large–based approaches for incremental data.
+                UMPD and PULM are the latest pre-large–based methods to handle stream environ-
+                ments to analyze HUPs with data deletion and modification, respectively. Because
+                these three methods were not designed for HAUPs, their list structures were adjusted
+                by replacing RU with MRU for each entry and by incorporating MAU-based pruning
+                strategies. In addition, PIHUP, PIHUPM, UMPD, and PULM were modified to divide the
+                pattern utility by its length during the pattern extension in accordance with the defini-
+                tion of HAUPs. Moreover, UMPD and PULM were optimized to consider data inser-
+                                                                                  
+                tion operations. These adjusted versions are referred to as PIHUP*, PIHUPM*, UMPD*,
+                and PULM*. All implementations were devised in C++, and the performance evaluations
+                were executed on an equal computing platform equipped with an Intel Core i7-6700 K
+                CPU (4.00 GHz), OS (Windows 11), and RAM (32 GB).                 
+                                                                                  
+                Table 6 Information for real and synthetic datasets               
+                Type      Dataset    # of Trans. # of Items Avg. Trans. Size      
+                          Accidents  340,183    468       33.8                    
+                          Chess      3,196      75        37                      
+                Real      Mushroom   8,124      37        23                      
+                          Pumsb      49,046     2,113     73.6                    
+                          Bms-pos    515,597    1,656     6.5                     
+                          Chainstore 1,112,949  46,086    7.2                     
+                          T10I4D200K 200,000    100       10                      
+                Synthetic –          –                                            
+                          T10I4D1000K 1,000,000                                   
+                                                                                  
+                                                                                  
+
+=== PAGE 22 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 22 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                 Table 6 describes the characteristics of the datasets utilized in the evaluations
+                described in the following sections. According to Table 6, the real datasets are config-
+                ured of Accidents, Chess, Mushroom, Pumsb, which are categorized as dense datasets,
+                and Bms-pos and Chainstore, which are classified as sparse datasets. The synthetic data-
+                sets are comprised for a set of T10I4DxK datasets. The real datasets were sourced from
+                the FIMI repository (http://fimi.ua.ac.be/data) and SPMF repository ( h t t p s : / / w w w . p h i l
+                i p p e - f o u r n i e r - v i g e r . c o m / s p m f / i n d e x . p h p ? l i n k = d a t a s e t s . p h p), while synthetic datasets
+                were generated with the IBM data generator. The scalability analysis was performed with
+                an average transaction length of 10 and a fixed number of items at 100. In contrast, the
+                total number of transactions was scaled up from 200 K to 1000 K at intervals of 200 K.
+                                                                                  
+                In the following evaluations, the part of the dataset excluding the original data, which is
+                considered as a portion of OR, original data ratio, in the total DB, was treated as incre-
+                mental data. Specifically, the number of occurrences for the data insertion was fixed at
+                9 and 19 for the real and synthetic datasets, respectively, with each batch being of equal
+                size. The rest of the dataset was partitioned into several incremental batches for sequen-
+                tial insertion.                                                   
+                                                                                  
+                Analysis of insertion progress tests                              
+                This section analyzes the performance of the proposed PIHAUPA against other compari-
+                son methods, PRE-HAUIMI, PIHUPM*, PIHUP*, UMPD*, and PULM*, utilizing the real
+                datasets described in Table 6. The results were measured under dataset-specific OR and
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 8 Results of runtime for insertion progress tests            
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 23 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 23 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                thresholds. For the dense datasets (Accidents, Chess, Mushroom, Pumsb), OR, upper
+                threshold, and lower threshold were (82%, 3%, 2.5%), (82%, 3.9%, 3.5%), (82%, 2%, 1.6%),
+                and (82%, 4.35%, 4.3%), respectively. For the sparse datasets (Bms-pos, Chainstore),
+                these were (95.5%, 0.5%, 0.3%) and (99.8%, 0.05%, 0.04%). Fig. 8 exhibits the runtime
+                results for the insertion progress tests. The proposed PIHAUPA displays better runtime
+                performance than the other comparison algorithms in all the results with real datasets
+                for the insertion progress tests. PIHAUPA effectively manages the pattern expansion
+                process using a tight re-scan condition. In contrast, the comparative algorithms rely on
+                looser conditions: PRE-HAUIMI utilizes its loose condition, while PIHUPM*, UMPD*,
+                and PULM* use the original re-scan condition, which is also not optimized for methods
+                                                                                  
+                that deal with average utility. Accordingly, it is observed that under the configured S u
+                and S l, PIHAUPA performs re-scans in several parts of the nine-insertion process with
+                the proposed tight re-scan condition. However, in these comparative methods under
+                the same S u and S l, a re-scan process is performed every time a data insertion occurs.
+                This is because the comparative methods employ much looser re-scan conditions, which
+                leads them to perform re-scans during all nine data insertions under the same inser-
+                tion settings. PIHUP* is a tree-based approach unlike other algorithms, and all results
+                for the insertion progress tests exhibit that it requires the second most runtime after
+                PRE-HAUIMI. For example, in Accidents, PIHAUPA shows that re-scan occurs in two
+                cases out of nine data insertions. Moreover, when the re-scan occurs, PIHAUPA shows
+                runtime results similar to UMPD* and PULM*. However, when the re-scan does not
+                                                                                  
+                occur, the difference in runtime results between the three methods is displayed as about
+                80 s. This trend is similar to the results for the remaining real datasets. Notably, this
+                efficiency was also observed in sparse datasets. For instance, in Chainstore, PIHAUPA
+                avoided unnecessary re-scans in four cases out of nine data insertions, while compara-
+                tive methods re-scanned every time. Whenever a re-scan did not occur, the proposed
+                method was about 15 s faster than the comparative algorithms. Figs. 9 (a)–(d) show the
+                memory usage results for the insertion progress tests. Similar to the results for run-
+                time, the memory usage results between PIHAUPA, PIHUPM*, UMPD*, and PULM*
+                are similar when the re-scan occurs. However, when PIHAUPA avoided a re-scan, the
+                memory usage in this case was less than 0.1 MB because there was no overhead for the
+                pattern expansion process. As a result, the proposed PIHAUPA demonstrates its robust-
+                ness across both dense and sparse datasets, showing superior runtime and competitive
+                                                                                  
+                memory usage compared to other comparative algorithms by utilizing an effective re-
+                scan condition even as data insertions continue.                  
+                                                                                  
+                Analysis of threshold tests                                       
+                In this section, the analysis of the performance evaluation results on real datasets, which
+                include both dense and sparse characteristics, is introduced. The evaluations aim to
+                analyze the runtime and memory usage performance of each algorithm by decreasing
+                the upper threshold while keeping the lower threshold fixed for each real dataset. The
+                upper threshold ratios were adjusted for each dataset characteristic. The upper thresh-
+                old ranges were Accidents (4.0%–3.0%), Chess (4.1%–3.9%), Mushroom (2.8%–2.0%),
+                Pumsb (4.45%–4.35%), Bms-pos (0.9%–0.5%), and Chainstore (0.09%–0.05%). Moreover,
+                                                                                  
+                the evaluations were conducted in the same experimental environment as in Sect. "Anal-
+                ysis of insertion progress tests", and the OR, lower threshold, and number of data
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 24 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 24 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 9 Results of memory usage for insertion progress tests       
+                                                                                  
+                insertions were also set to the same as in the previous section. Fig. 10 shows the runtime
+                results for the threshold tests. In these results, the proposed PIHAUPA always shows
+                better runtime performance on real datasets, regardless of their density characteristics.
+                Similar to the results described in Sect. "Analysis of insertion progress tests", PIHAUPA,
+                PIHUPM*, UMPD*, and PULM* have better runtime performance than the other two
+                comparison algorithms. Moreover, PIHAUPA outperforms the comparison algorithms
+                                                                                  
+                by a minimum of more than 3 times on Accidents, Chess, and Pumsb, and more than
+                2 times on Mushroom. This trend is also evident in sparse datasets. For instance, in
+                Chainstore, PIHAUPA outperforms the comparison algorithms more than 2 times. The
+                results on runtime performance show that the runtime difference between PIHAUPA,
+                PIHUPM*, UMPD*, and PULM* decreases as the upper threshold decreases. Neverthe-
+                less, the overall runtime of the proposed approach is found to be better than other pre-
+                large-based methods because the proposed approach utilizes a tight re-scan condition to
+                efficiently perform the re-scan and pattern expansion processes. In Chess, at the upper
+                threshold of 4.1%, PIHAUPA takes 5.58 s, PIHUPM*, UMPD*, and PULM* take 55.3,
+                24.5, and 23.7 s, and PRE-HAUIMI and PIHUP* exhibit runtime performance of 3648.7
+                and 4590.9 s, respectively. In Chainstore, at the 0.05% upper threshold, PIHAUPA, PRE-
+                                                                                  
+                HAUIM, PIHUPM*, UMPD*, and PULM* show 73.5, 218.7, 211.1, 200.4, and 186.1 s,
+                while PIHUP* shows 650.7 s. Table 7 provides a granular numerical breakdown for the
+                Accidents, detailing the exact runtime, memory usage, and re-scan counts. As shown
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 25 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 25 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 10 Results of runtime for threshold tests                    
+                                                                                  
+                Table 7 Detailed results of runtime and memory usage of accidents 
+                Su\  Algorithm PIHAUPA PRE-HAUIMI PIHUPM* PIHUP** UMPD PULM*      
+                     Runtime 68.327 8262.541 1702.158 13359.89 736.108 743.752    
+                4.00% Memory 503.696 740.497 635.001 1386.156 614.997 619.425     
+                     #Re-scans 0   9       9     9      9     9                   
+                     Runtime 68.359 11170.175 1655.943 13499.487 734.954 743.518  
+                3.75% Memory 503.696 759.994 635.001 1386.156 614.997 619.425     
+                     #Re-scans 0   9       9     9      9     9                   
+                     Runtime 154.004 15339.908 1658.034 13531.196 733.656 743.91  
+                3.50% Memory 592.084 759.994 635.001 1386.156 614.997 619.425     
+                     #Re-scans 1   9       9     9      9     9                   
+                     Runtime 147.296 21257.762 1649.288 13471.739 733.17 744.84   
+                3.25% Memory 583.335 759.994 635.001 1386.156 614.997 619.425     
+                     #Re-scans 1   9       9     9      9     9                   
+                     Runtime 226.586 29737.747 1656.01 13575.72 734.099 743.513   
+                3.00% Memory 612.957 775.467 635.001 1386.156 614.997 619.425     
+                     #Re-scans 2   9       9     9      9     9                   
+                in Table 7, when S l=2.5% in Accidents, increasing S u from 3.0% to 4.0% reduces the
+                number of re-scans in PIHAUPA, while the comparative methods exhibit no change.
+                Under this threshold range, the comparison methods re-scan at every insertion due to
+                their loose re-scan conditions, whereas the tight re-scan condition of PIHAUPA results
+                in a small number of re-scans, between 0 and 2. Fig. 11 shows the memory usage results
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 26 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 26 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 11 Results of memory usage for threshold tests               
+                for the threshold tests. For all the real datasets utilized in the experiments, the pro-
+                                                                                  
+                posed method outperforms PRE-HAUIMI and PIHUP* and shows competitive memory
+                usage performance with PIHUPM*, UMPD*, and PULM*. Since PIHUP* is a tree-based
+                approach, it has the highest memory usage due to the memory usage overhead caused
+                by the conditional tree generated during pattern expansion. On the other hand, the
+                proposed method shows good runtime performance compared to the other algorithms
+                while requiring competitive memory usage. In Pumsb, the proposed PIHAUPA requires
+                82.7 MB at the 4.45% upper threshold, while PIHUPM*, UMPD*, and PULM* require
+                108.7, 106.5, and 106.5 MB, and PRE-HAUIMI and PIHUP* require 185.9 MB and
+                561.6 MB, respectively. A similar trend is observed in sparse datasets. In Bms-pos, at
+                the 0.7% upper threshold, PIHAUPA used 104.3 MB, which is comparable to PIHUPM*
+                (142.2 MB), UMPD* (119.1 MB), PULM* (118.6 MB), and PRE-HAUIMI (128.9 MB),
+                                                                                  
+                and significantly lower than PIHUP* (477.4 MB). As a result, PIHAUPA displays better
+                runtime performance than other comparison approaches while requiring competitive
+                memory usage, proving that it is efficient across datasets with diverse densities even in
+                environments with varying thresholds.                             
+                                                                                  
+                Analysis of scalability tests                                     
+                The scalability of the PIHAUPA algorithm is evaluated with a group of synthetic
+                datasets, T10I4DxK, as summarized in Table 6. These datasets maintain an average
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 27 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 27 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 12 Results of scalability tests                              
+                transaction length of 10 and a fixed number of items at 100 while varying the total
+                                                                                  
+                transaction count from 200 K to 1000 K. The scalability assessment examines the run-
+                time and memory usage performance of PIHAUPA and other comparison methods as
+                the transaction volume increases. Figs. 12 (a) and (b) illustrate the results of scalability
+                tests regarding runtime and memory usage. In this experiment, OR is set at 91%, with
+                S l and S u configured as 0.2% and 1.0%, respectively. Additionally, the number of data
+                insertions is set as 19, ensuring the scale of each data insertion is equally set. Fig. 12
+                (a) presents the runtime results, revealing that the performance gap between PIHAUPA
+                and other algorithms becomes increasingly pronounced as the number of transactions
+                increases. This tendency of the runtime results from PIHAUPA is derived from a tight
+                re-scan condition, which effectively handles the data insertion from a stream environ-
+                ment. For instance, when the transaction count is set as 1000 K, PIHAUPA achieves a
+                                                                                  
+                runtime of 61.6 s, outperforming PRE-HAUIMI, PIHUPM*, PIHUP*, UMPD*, and
+                PULM* with 540.9, 821.9, 636.4, 250.8, and 247.4 s, respectively. Fig. 12 (b) illustrates the
+                results of scalability tests regarding memory usage. PIHUP* exhibits the highest memory
+                usage among the evaluated algorithms since the method is based on a tree structure.
+                Meanwhile, PIHAUPA, PIHUPM*, PIHUP*, UMPD*, and PULM* demonstrate competi-
+                tive memory usage. This tendency indicates that PIHAUPA not only outperforms run-
+                time scalability but also maintains competitive memory usage scalability compared with
+                other comparison methods.                                         
+                                                                                  
+                Analysis of sensitivity tests                                     
+                This section analyzes the results of the sensitivity tests when both upper threshold
+                S u and lower threshold S l vary. The proposed PIHAUPA was compared with PRE-
+                                                                                  
+                HAUIMI, which extracts the same HAUPs under pre-large conditions in incremental
+                environments, and with PULM*, the most recent method among the comparison meth-
+                ods. For each dataset, the threshold gap was maintained by decreasing both S u and
+                S l equally, and the total runtime and peak memory usage were measured as shown in
+                Figs. 13 and 14. The remaining experimental settings remain the same as in Sect. "Analy-
+                sis of insertion progress tests". Overall, PIHAUPA achieves enhanced runtime and mem-
+                ory usage performance compared to both PRE-HAUIMI and PULM*. In particular, as
+                both S u and S l decrease, the runtime of all methods increases. This is because lower
+                S u and S l lead each method to explore a larger search space during the pattern expan-
+                sion procedure. Compared to PIHAUPA, the loose re-scan condition of PRE-HAUIMI
+                causes re-scan operations to be invoked more frequently, thereby increasing its over-
+                                                                                  
+                head. When both thresholds decrease, the increase in runtime is smallest for PIHAUPA
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 28 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 28 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 13 Results of runtime for sensitivity tests                  
+                                                                                  
+                compared with PRE-HAUIMI and PULM*. For example, in the Accidents dataset, when
+                the thresholds decrease from S u=3.1% and S l=2.6% to S u=2.0% and S l=2.4%, the run-
+                time of the proposed PIHAUPA increases from 191.6 s to 276.1 s, which shows a rise of
+                84.5 s. However, PULM* increases by 266.1 s, from 678.0 to 944.1 s, and PRE-HAUIMI
+                rises by 8,109.8 s, from 24,709.0 to 32,818.9 s. This demonstrates that PIHAUPA exhib-
+                its the lowest sensitivity to variations in the threshold parameters. In terms of memory
+                usage, PIHAUPA shows better performance than PRE-HAUIMI and PULM*. In con-
+                clusion, the proposed PIHAUPA demonstrates superior runtime with better memory
+                usage across varying threshold settings with the best sensitivity in changes in both upper
+                threshold S u and lower threshold S l.                            
+                                                                                  
+                Analysis of statistical tests                                     
+                                                                                  
+                This section presents an analysis of the accuracy test results performed by the pro-
+                posed PIHAUPM and the comparison method, PRE-HAUIMI. To verify the accuracy
+                of the proposed PIHAUPM, the test aims to assess whether the result patterns obtained
+                by PIHAUPM exactly match those extracted by PRE-HAUIMI although the proposed
+                method utilizes the newly proposed re-scan condition. However, relying on a single data-
+                set for evaluation does not provide a reliable measure of accuracy. To ensure statistical
+                reliability and satisfy the Central Limit Theorem, the experiment involves the generation
+                of 30 sampled datasets for each entry listed in Table 6. To generate these 150 sampled
+                datasets, the Swap Randomization technique, previously applied in prior studies [39, 49],
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 29 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 29 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 14 Results of memory usage for sensitivity tests             
+                is utilized. The accuracy test results, denoted by the quantity of result patterns across
+                all sampled datasets, are presented in Figs. 15 (a)–(e). The settings for OR, data inser-
+                tion count, and S l are equal to those outlined in Sect. 4.4. S u is configured as 0.6%. The
+                                                                                  
+                sampled datasets are generated by means of random item swapping. As such, variations
+                in result patterns occur depending on the dataset. Nevertheless, PIHAUPA consistently
+                extracts the same number of patterns as PRE-HAUIMI. In addition, to further exam-
+                ine the accuracy of the proposed PIHAUPA, the pattern sets produced by PIHAUPA
+                and PRE-HAUIMI were arranged in lexicographic order. After that, their corresponding
+                average utility values, rounded to three decimals, were compared. The results indicate
+                that PIHAUPA extracted identical patterns with identical AU values as PRE-HAUIMI.
+                Table 8 details the accuracy test results through mean, variance, and standard deviation.
+                For every sampled dataset, both algorithms extracted the same results, thereby achiev-
+                ing an accuracy of 100%. The analysis confirms that PIHAUPA maintains 100% accuracy
+                in extracting result patterns without loss or duplication.        
+                                                                                  
+                Analysis of case study under concept drift tests                  
+                                                                                  
+                This section analyzes the results of the case study on the proposed PIHAUPA under
+                concept drift tests. In diverse real-world environments, stream data exhibit concept
+                drift, where the underlying characteristics of the data change over time. To evaluate
+                the effectiveness of the proposed tight re-scan condition and pattern tree structures
+                in complex stream environments, PIHAUPA is compared against PRE-HAUIMI. Both
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 30 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 30 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 15 Accuracy test results on sampled datasets                 
+                                                                                  
+                Table 8 Analysis of accuracy test results on sampled synthetic datasets
+                Dataset   Algorithm Mean Variance Standard Deviation Accuracy     
+                T10I4D200K PIHAUPA 147.367 1.895402 1.376736 100%                 
+                          PRE-HAUIMI 147.367 1.895402 1.376736                    
+                T10I4D400K PIHAUPA 146.567 1.564368 1.250747 100%                 
+                          PRE-HAUIMI 146.567 1.564368 1.250747                    
+                T10I4D600K PIHAUPA 146.933 1.512643 1.229896 100%                 
+                          PRE-HAUIMI 146.933 1.512643 1.229896                    
+                T10I4D800K PIHAUPA 146.4 1.075862 1.037238   100%                 
+                          PRE-HAUIMI 146.4 1.075862 1.037238                      
+                T10I4D1000K PIHAUPA 146.033 1.688506 1.299425 100%                
+                          PRE-HAUIMI 146.033 1.688506 1.299425                    
+                PIHAUPA and PRE-HAUIMI employ the pre-large concept and extract HAUPs. To
+                properly reflect concept drift in data streams, both methods adopt a forgetting mecha-
+                nism that removes the oldest portion of the data as new transactions arrive. In Acci-
+                dents, a forgetting unit of 500 is applied, deleting the oldest 500 transactions whenever
+                500 new transactions are added. For Chainstore, the forgetting unit is set to 1,000. Their
+                total runtime and peak memory usage are measured across nine incremental updates
+                where the portion of the original data, OR, gradually increases to assess scalability and
+                                                                                  
+                responsiveness. In Accidents, S l and S u are set to 3.5% and 3.45%, while in Chainstore
+                they are set to 0.15% and 0.08%. Fig. 16 presents the runtime, and Fig. 17 illustrates the
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 31 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 31 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 16 Results of runtime on the case study under concept drift when increasing original data ratio
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                                                                                  
+                Fig. 17 Results of Memory usage on the case study under concept drift when increasing original data ratio
+                                                                                  
+                peak memory usage of both methods. Overall, PIHAUPA demonstrates enhanced per-
+                formance of runtime and memory usage than PRE-HAUIMI where the portion of the
+                original data varies. Since increasing the portion of the original data requires process-
+                ing a greater data volume, the runtime and memory usage tend to rise in both meth-
+                ods. Notably, PIHAUPA exhibits a much smaller runtime increase than PRE-HAUIMI.
+                For instance, when OR increases from 60% to 80% in Chainstore, PIHAUPA shows a
+                smaller increase of 13.7 s, from 47.1 to 60.8 s; by contrast, PRE-HAUIMI increases by
+                37.8 s, from 81.6 to 119.4 s. In conclusion, PIHAUPA demonstrates superior runtime
+                efficiency, lower memory usage, and enhanced scalability than PRE-HAUIMI under
+                complex stream environments with concept drift. These results indicate that PIHAUPA
+                offers improved applicability compared to the prior pre-large-based incremental
+                                                                                  
+                approach, PRE-HAUIMI.                                             
+                                                                                  
+                Discussion and future work                                        
+                This section provides a discussion of the proposed PIHAUPA and outlines directions
+                for future work. PIHAUPA efficiently extracts HAUPs from incremental data environ-
+                ments by leveraging previously extracted pre-large and large patterns in its pattern tree
+                structure with a tighter re-scan condition. This approach reduces unnecessary full data
+                scans and redundant pattern expansion operations. The experimental results indicate
+                that the proposed PIHAUPA exhibits enhanced runtime and scalability performance
+                with improved sensitivity and applicability while maintaining competitive memory usage
+                without any result pattern loss. At the same time, certain aspects of PIHAUPA remain as
+                                                                                  
+                directions for future work. First, extending the proposed approach with parallelization is
+                a promising direction for large-scale stream processing, as shown in recent GPU-based
+                studies for a decision support system utilizing modern multiprocessing units [53]. If the
+                re-scan condition is met and pattern expansion is required, the expansion tasks from
+                                                                                  
+                                                                                  
+                                                                                  
+
+=== PAGE 32 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 32 of 34 
+                                                                                  
+                                                                                  
+                                                                                  
+                the constructed global PIHAUP-List can be decomposed into independent subproblems,
+                each starting from a different prefix node from the list. For each prefix, the transaction
+                and utility information relevant to extending that prefix node is obtained by construct-
+                ing the conditional list of the prefix. Then, the conditional list is assigned to an indi-
+                vidual worker, which performs pattern expansion with the pruning strategy on its own
+                local lists using the information from the conditional PIHAUP-List. Because the over-
+                all search space is divided into mutually exclusive subspaces and the workers explore
+                non-overlapping pattern sets, the partial results can be merged by a simple union with
+                minimal synchronization overhead. This approach reduces the total processing time
+                of PIHAUPA for large-scale stream environments. Moreover, the pruning strategy for
+                                                                                  
+                optimizing the search space and the re-scan condition could be enhanced. Introducing
+                tighter upper bounds could further reduce the search space for more efficient pattern
+                expansion, while an enhanced re-scan condition decreases unnecessary re-scan opera-
+                tions and enhances overall efficiency.                            
+                                                                                  
+                Conclusion                                                        
+                In this paper, we proposed an intelligent system called PIHAUPA that utilizes the pre-
+                large concept in stream environments to analyze result patterns where pattern length
+                is considered without candidate generation. The proposed method effectively processes
+                data insertion within dynamic environments. By utilizing a tight re-scan condition
+                superior to existing approaches, it significantly minimizes the frequency of the pattern
+                                                                                  
+                expansion process and full data re-scans. In addition, the proposed method utilizes the
+                pre-large concept to analyze utility-driven patterns while accounting for pattern length.
+                Consequently, it shows that the proposed method extracts insightful knowledge where
+                various criteria are considered. In other words, the proposed method considers the
+                quantity and profit of each pattern, as well as the pattern length, to extract refined infor-
+                mation based on the management of large and pre-large patterns through the pattern
+                tree. Comprehensive experiments on diverse datasets demonstrated that the proposed
+                method has superior runtime and scalability performance compared to other compari-
+                son methods with competitive memory usage. Moreover, accuracy test results proved
+                that the proposed method extracts identical results as the existing method through a
+                newly proposed re-scan condition. Furthermore, the proposed PIHAUPA demonstrated
+                stable sensitivity across various threshold settings and demonstrated its applicability
+                                                                                  
+                through evaluation in concept drift environments. For our future work, we plan to inves-
+                tigate parallel processing strategies of the proposed method to take advantage of mod-
+                ern multiprocessor environments. In addition, we aim to refine the pruning strategy for
+                optimizing the search space by developing a tighter upper bound and to advance the
+                re-scan condition, which reduces re-scan operations and pattern expansions for efficient
+                pattern analysis.                                                 
+                Author contributions                                              
+                D. Kim – Writing manuscript & revision, Development of methodology, Validations of the approach, S. Park – Writing
+                manuscript & revision, Development of methodology, Validations of the approach, J. Park – Writing manuscript &
+                revision, Development of methodology, Validations of the approach, H. Kim– Writing manuscript, Methodology
+                update, Validations of the approach, S. Park – Writing manuscript, Validations of the approach, M. Cho –Methodology
+                update, Validations of the approach, U. Yun- Writing draft and revision, Conceptualizations of the ideas of the proposed
+                approach, Methodology update, Validations of the proposed and compared approaches, Funding acquisition, Project
+                administration.                                                   
+                Funding                                                           
+                There is no funding.                                              
+                                                                                  
+
+=== PAGE 33 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 33 of 34 
+                                                                                  
+                                                                                  
+                Data availability                                                 
+                The data used in this paper are available at the FIMI repository (http://fimi.ua.ac.be/data/).
+                                                                                  
+                Declarations                                                      
+                Ethics and consent to participate                                 
+                Not applicable.                                                   
+                Consent to publication                                            
+                Not applicable.                                                   
+                Competing interests                                               
+                The authors declare no competing interests.                       
+                Received: 22 July 2025 / Accepted: 9 December 2025                
+                                                                                  
+                                                                                  
+                                                                                  
+                References                                                        
+                1. Hu Z, You J, Yang Z, Li X, Xie H, Li Q, et al. A multi-hop graph reasoning network for knowledge-based VQA. ACM Trans
+                  Intell Syst Technol. 2025;16(3):1–23. https://doi.org/10.1145/3724125.
+                2. Liu Y, Yao Q, Li Y. Modeling n-ary relational knowledge bases with tensor decomposition. ACM Trans Intell Syst Technol.
+                  2025;16(3):1–29. https://doi.org/10.1145/3709002.               
+                3. Xuan HR, Li BH, Wu WL, Liu Y, Yin HZ. Knowledge enhancement and temporal aware for multi-behavior contrastive recom-
+                  mendation. ACM Trans Intell Syst Technol. 2025;16(5):1–23. https://doi.org/10.1145/3735512.
+                4. Le TH, Huang SC, Hoang QV, Lokaj Z, Lu ZH. Amalgamating knowledge for object detection in rainy weather conditions.
+                  ACM Trans Intell Syst Technol. 2025;16(2):1–20. https://doi.org/10.1145/3712703.
+                5. Zhou Y, Wang Z, Jiang Y, Ma B, Wang R, Liu Y, et al. AEKG4APT: an AI-enhanced knowledge graph for advanced persistent
+                  threats with large language model analysis. ACM Trans Intell Syst Technol. 2025. https://doi.org/10.1145/3735645.
+                6. Zhang Z, Huang J. Fast frequent patterns mining by multiple sampling with tight guarantee under bayesian statistics. IEEE
+                  Trans Cybern. 2023;53(5):2993–3006.                             
+                7. Truong T, Duong H, Le B, Fournier-Viger P, Yun U. Frequent high minimum average utility sequence mining with con-
+                  straints in dynamic databases using efficient pruning strategies. Appl Intell. 2022;52(6):6106–28.
+                8. Wu Y, Meng Y, Li Y, Guo L, Zhu X, Fournier-Viger P, et al. COPP-Miner: top-k contrast order-preserving pattern mining for
+                  time series classification. IEEE Trans Knowl Data Eng. 2024;36(6):2372–87.
+                9. Wu Y, Tian S, Li Y, Liu J, Li J, Wang W, et al. OIP-Miner: one-off incremental sequential pattern mining with forgetting factor.
+                  Sci China Inf Sci. 2025;68(10):209101. https://doi.org/10.1007/s11432-024-4496-9.
+                10. Truong T, Duong H, Le B, Fournier-Viger P, Yun U. Mining interesting sequences with low average cost and high average
+                  utility. Appl Intell. 2022;52(7):7136–57.                       
+                11. Wu Y, Lei R, Li Y, Guo L, Wu X. HAOP-Miner: self-adaptive high-average utility one-off sequential pattern mining. Expert Syst
+                  Appl. 2021;184:115449.                                          
+                12. Kumar MJK, Rana D. HARUIM: high average recent utility itemset mining. Int J Data Min Model Manage. 2024;16(1):66–100.
+                13. Li G, Shang T, Zhang Y. Efficient mining high average-utility itemsets with effective pruning strategies and novel list struc-
+                  ture. Appl Intell. 2023;53(5):6099–118.                         
+                14. Sethi KK, Ramesh D. High average-utility itemset mining with multiple minimum utility threshold: a generalized approach.
+                  Eng Appl Artif Intell. 2020;96:103933.                          
+                15. Nguyen TDD, Tung NT, Pham T, Nguyen LTT. Parallel approaches to extract multi-level high utility itemsets from hierarchi-
+                  cal transaction databases. Knowl Based Syst. 2023;276:110733.   
+                16. Tung NT, Nguyen TDD, Nguyen LTT, Vo B. An efficient method for mining high-utility itemsets from unstable negative
+                  profit databases. Expert Syst Appl. 2024;237:121489.            
+                17. Vo B, Le T-P, Hong T-P, Le B, Jung JJ. An efficient approach for mining frequent item sets with transaction deletion opera-
+                  tion. Int Arab J Inf Technol. 2016;13(5):595–602.               
+                18. Jaysawal BP, Huang J-W. SOHUPDS+: an efficient one-phase algorithm for mining high utility patterns over a data stream.
+                  ACM Trans Knowl Discovery Data. 2025;19(1):1–16. https://doi.org/10.1145/3702645.
+                19. Huynh B, Tung NT, Nguyen TDD, Trinh C, Snasel V, Nguyen L. New approaches for mining high utility itemsets with mul-
+                  tiple utility thresholds. Appl Intell. 2024;54(1):767–90.       
+                20. Tseng VS, Wu C-W, Shie B-E, Yu PS. UP-Growth: an efficient algorithm for high utility itemset mining, In Proceedings of the
+                  16th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining (KDD ’10), pp. 253–262, 2010.
+                21. Thurachon W, Kreesuradej W. Incremental association rule mining with a fast incremental updating frequent pattern
+                  growth algorithm. IEEE Access. 2021;9:55726–41.                 
+                22. Liu M, Qu J. Mining high utility itemsets without candidate generation, In Proceedings of the 21st ACM International
+                  Conference on Information and Knowledge Management (CIKM ’12), pp. 55–64, 2012.
+                23. Yun U, Ryang H, Lee G, Fujita H. An efficient algorithm for mining high utility patterns from incremental databases with
+                  one database scan. Knowl Based Syst. 2017;124:188–206.          
+                24. Yun U, Nam H, Lee G, Yoon E. Efficient approach for incremental high utility pattern mining with indexed list structure.
+                  Future Gener Comput Syst. 2019;95:221–39.                       
+                25. Lee C, Kim H, Cho M, Kim H, Vo B, Lin JC-W, et al. Incremental top-k high utility pattern mining and analyzing over the
+                  entire accumulated dynamic database. IEEE Access. 2024;12:77605–20.
+                26. Kim S, Kim H, Cho M, Kim H, Vo B, Lin JC-W, et al. Efficient approach for mining high-utility patterns on incremental data-
+                  bases with dynamic profits. Knowl Based Syst. 2023;282:111060.  
+
+=== PAGE 34 ===
+                                                                                  
+                                                                                  
+                                                                                  
+        Kim et al. Journal of Big Data (2026) 13:13                 Page 34 of 34 
+                                                                                  
+                                                                                  
+                27. Yun U, Kim H, Kim H, Park S. Efficient fuzzy-based high utility pattern computing and analyzing approach with temporal
+                  properties. Appl Soft Comput. 2025;172:112902. https://doi.org/10.1016/j.asoc.2025.112902.
+                28. Nam H, Yun U, Yoon E, Lin JC-W. Efficient approach of recent high utility stream pattern mining with indexed list structure
+                  and pruning strategy considering arrival times of transactions. Inf Sci. 2020;529:1–27.
+                29. Baek Y, Yun U, Kim H, Nam H, Kim H, Lin JC-W, et al. Rhups: mining recent high utility patterns with sliding window–based
+                  arrival time control over data streams. ACM Trans Intell Syst Technol. 2021;12(2):1–27. https://doi.org/10.1145/3430767.
+                30. Kim H, Yun U, Baek Y, Kim H, Nam H, Lin JC-W, et al. Damped sliding based utility oriented pattern mining over stream data.
+                  Knowl Based Syst. 2021;213:106653.                              
+                31. Lin JC-W, Li T, Fournier-Viger P, Hong T-P, Zhan J, Voznak M. An efficient algorithm to mine high average-utility itemsets.
+                  Adv Eng Inform. 2016;30(2):233–43.                              
+                32. Hong T-P, Lee C-H, Wang S-L. Effective utility mining with the measure of average utility. Expert Syst Appl.
+                  2011;38(7):8259–65.                                             
+                33. Yun U, Kim D. Mining of high average-utility itemsets using novel list structure and pruning strategy. Future Gener Com-
+                  put Syst. 2017;68:346–60.                                       
+                34. Kim H, Yun U, Baek Y, Kim J, Vo B, Yoon E, Fujita H. Efficient list based mining of high average utility patterns with maximum
+                  average pruning strategies. Inf Sci. 2021;543:85–105.           
+                35. Wu JM-T, Lin JC-W, Pirouz M, Fournier-Viger P. TUB-HAUPM: tighter upper bound for mining high Average-Utility patterns.
+                  IEEE Access. 2018;6:18655–69.                                   
+                36. Kim D, Yun U. Efficient algorithm for mining high average-utility itemsets in incremental transaction databases. Appl Intell.
+                  2017;47(1):114–31.                                              
+                37. Kim J, Yun U, Yoon E, Lin JC-W, Fournier-Viger P. One scan based high average-utility pattern mining in static and dynamic
+                  databases. Future Gener Comput Syst. 2020;111:143–58.           
+                38. Lee C, Ryu T, Kim H, Kim H, Vo B, Lin JC-W, et al. Efficient approach of sliding window-based high average-utility pattern
+                  mining with list structures. Knowledge-Based Syst. 2022;256:109702.
+                39. Kim H, Kim H, Cho M, Vo B, Lin JC-W, Fujita H, et al. Efficient approach of high average utility pattern mining with indexed
+                  list-based structure in dynamic environments. Inf Sci. 2024;657:119924.
+                40. Wu JM-T, Teng Q, Lin JC-W, Yun U, Chen H-C. Updating high average-utility itemsets with pre-large concept. J Intell Fuzzy
+                  Syst. 2020;38(5):5831–40.                                       
+                41. Lin JC-W, Pirouz M, Djenouri Y, Cheng C-F, Ahmed U. Incrementally updating the high average-utility patterns with pre-
+                  large concept. Appl Intell. 2020;50(11):3788–807.               
+                42. Wu JM-T, Teng Q, Tayeb S, Lin JC-W. Dynamic maintenance model for high average-utility pattern mining with deletion
+                  operation. Appl Intell. 2022;52(15):17012–25.                   
+                43. Wu JM-T, Teng Q, Lin JC-W, Fournier-Viger P, Cheng C-F. Maintenance of Prelarge High Average-Utility Patterns in Incre-
+                  mental Databases. In: Trends in Artificial Intelligence Theory and Applications. Artificial Intelligence Practices. 2020. p.
+                  884–95.                                                         
+                44. Lin C-W, Hong T-P, Lan G-C, Wong J-W, Lin W-Y. Incrementally mining high utility patterns based on pre-large concept.
+                  Appl Intell. 2014;40(2):343–57.                                 
+                45. Lee J, Yun U, Lee G, Yoon E. Efficient incremental high utility pattern mining based on pre-large concept. Eng Appl Artif
+                  Intell. 2017;72:111–23.                                         
+                46. Yun U, Nam H, Kim J, Kim H, Baek Y, Lee J, et al. Efficient transaction deleting approach of pre-large based high utility pat-
+                  tern mining in dynamic databases. Future Gener Comput Syst. 2020;103:58–78.
+                47. Lin C-W, Hong T-P, Lan G-C, Wong J-W, Lin W-Y. Efficient updating of discovered high-utility itemsets for transaction dele-
+                  tion in dynamic databases. Adv Eng Inform. 2015;29(1):16–27.    
+                48. Yun U, Kim H, Ryu T, Baek Y, Nam H, Lee J, et al. Prelarge-based utility-oriented data analytics for transaction modifications
+                  in internet of things. IEEE Internet Things J. 2021;8(24):17333–44.
+                49. Kim H, Lee C, Ryu T, Kim H, Kim S, Vo B, et al. Pre-large based high utility pattern mining for transaction insertions in incre-
+                  mental database. Knowledge-Based Syst. 2023;268:110478.         
+                50. Kim D, Park S, Kim H, Lee C, Kim H, Cho M, et al. Pre-eminent utility driven data analytics based on prelarge patterns for
+                  dynamic transaction deletion in IoT environments. IEEE Internet Things J. 2025;12(13):24470–89. h t t p s : / / d o i . o r g / 1 0 . 1 1 0 9 / J i
+                  o t . 2 0 2 5 . 3 5 5 5 2 7 8 .                                 
+                51. Yun U, Kim H, Cho M, Ryu T, Park S, Kim D, et al. Utility-driven data analytics algorithm for transaction modifications using
+                  pre-large concept with single database scan. IEEE Trans Big Data. 2025. https://doi.org/10.1109/Tbdata.2025.3556615.
+                52. Yan H, Li F, Hsieh M-C, Wu JM-T. High-utility sequential pattern mining in incremental database. J Supercomputing.
+                  2024;81:81.                                                     
+                53. Rahimi I. A decision support system for open-pit mining optimisation with dynamic uncertainty and GPU-based parallel
+                  repair approach. Expert Syst Appl. 2026;298:129544. https://doi.org/10.1016/j.eswa.2025.129544.
+                Publisher’s note                                                  
+                Springer Nature remains neutral with regard to jurisdictional claims in published maps and institutional affiliations.

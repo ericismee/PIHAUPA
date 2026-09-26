@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Phân tích PIHAUPA và so sánh tight re-scan với điều kiện cũ.">
+  <title>PIHAUPA Laboratory</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23081421'/%3E%3Cpath d='M16 46V19h18c10 0 16 5 16 13s-6 13-16 13H26v-8h8c4 0 6-2 6-5s-2-5-6-5h-8v19z' fill='%2327d3b2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/styles.css">
+  <style>[hidden]{display:none!important}.summary-grid{grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">P</span><div><strong>PIHAUPA</strong><small>Algorithm Laboratory</small></div></div>
+    <div class="paper-tag">Kim et al. · Journal of Big Data · 2026</div>
+  </header>
+
+  <main class="workspace">
+    <aside class="controls panel">
+      <div class="section-heading"><span>01</span><div><h1>Cấu hình phân tích</h1><p>Dữ liệu định lượng theo batch</p></div></div>
+      <label class="file-drop" for="fileInput">
+        <input id="fileInput" type="file" accept=".txt,text/plain">
+        <span class="drop-icon">↑</span>
+        <strong id="fileName">Chọn file input</strong>
+        <small>TXT · tối đa 20 MB</small>
+      </label>
+      <button class="button secondary full" id="sampleButton">Dùng dữ liệu Tables 2–3</button>
+
+      <div class="field-grid">
+        <label><span>Upper threshold · Su</span><input id="su" type="number" value="0.23" min="0.000001" max="1" step="0.01"></label>
+        <label><span>Lower threshold · Sl</span><input id="sl" type="number" value="0.10" min="0.000001" max="1" step="0.01"></label>
+      </div>
+      <div class="formula">
+        <span>Tight re-scan · Eq.(12)</span>
+        <code>MU(ID) − Su×TU(ID) ≥ (Su−Sl)×TU(OD)</code>
+      </div>
+      <button class="button primary full" id="runButton"><span>Chạy và so sánh</span><b>→</b></button>
+      <div class="status" id="status" data-kind="idle"><i></i><span>Sẵn sàng phân tích</span></div>
+    </aside>
+
+    <section class="results">
+      <div class="empty panel" id="emptyState">
+        <div class="empty-orbit"><span>AU</span></div>
+        <h2>Kết quả sẽ xuất hiện tại đây</h2>
+        <p>Chọn file hoặc dùng bộ dữ liệu bài báo, sau đó chạy để xem mẫu, điều kiện re-scan và mức sử dụng tài nguyên.</p>
+      </div>
+
+      <div id="dashboard" hidden>
+        <div class="summary-grid" id="summaryCards"></div>
+
+        <section class="comparison panel">
+          <div class="panel-title"><div><span>02</span><h2>So sánh thuật toán</h2></div><div class="equivalence" id="equivalence"></div></div>
+          <div class="compare-table-wrap"><table class="compare-table"><thead><tr><th>Chỉ số</th><th>Original Eq.(5)</th><th>Tight Eq.(6)</th><th>Thay đổi</th></tr></thead><tbody id="comparisonBody"></tbody></table></div>
+        </section>
+
+        <section class="panel batches-panel">
+          <div class="panel-title"><div><span>03</span><h2>Diễn tiến theo batch</h2></div><div class="legend"><i class="large-dot"></i>LARGE <i class="pre-dot"></i>PRE-LARGE</div></div>
+          <div class="batch-tabs" id="batchTabs" role="tablist"></div>
+          <div id="batchDetail"></div>
+        </section>
+
+        <section class="panel patterns-panel">
+          <div class="panel-title"><div><span>04</span><h2>Mẫu cuối cùng</h2></div><div class="filter-group"><button class="filter active" data-filter="ALL">Tất cả</button><button class="filter" data-filter="LARGE">LARGE</button><button class="filter" data-filter="PRE_LARGE">PRE-LARGE</button></div></div>
+          <div class="pattern-table-wrap"><table class="pattern-table"><thead><tr><th>Mẫu</th><th>Phân loại</th><th>AU</th><th>Sum utility</th><th>Độ dài</th></tr></thead><tbody id="patternBody"></tbody></table></div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

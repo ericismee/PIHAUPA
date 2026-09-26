@@ -1,0 +1,4 @@
+batch,batchRows,cumulativeRows,elapsedMs,memoryBeforeMb,memoryAfterMb,peakMemoryMb,batchTU,batchMU,totalTU,rescanTriggered,tightRescanDenominator,tightRescanLimit,originalRescanLimit,largeCount,preLargeCount,tightLeftMUminusSuTU,tightRightSuMinusSlTimesOldTU,decision,originalWouldRescan
+"DB0",5,5,0.891000,7.066475,7.066475,7.066475,141.000000,73.000000,141.000000,false,,,,4,5,,,"INITIAL SCAN",
+"DB1",2,7,0.137100,7.066475,7.066475,7.066475,32.000000,24.000000,173.000000,false,0.693333,26.437500,23.805195,2,6,16.640000,18.330000,"UPDATE TREE",true
+"DB2",2,9,0.481500,7.066475,7.066475,7.066475,67.000000,40.000000,240.000000,true,0.644219,28.453068,23.805195,3,7,41.230000,18.330000,"RE-SCAN",true

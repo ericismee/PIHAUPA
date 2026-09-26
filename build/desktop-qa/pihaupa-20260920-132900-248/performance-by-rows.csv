@@ -1,0 +1,4 @@
+batch,batchRows,cumulativeRows,elapsedMs,memoryBeforeMb,memoryAfterMb,peakMemoryMb,batchTU,batchMU,totalTU,rescanTriggered,tightRescanDenominator,tightRescanLimit,originalRescanLimit,largeCount,preLargeCount
+"DB0",5,5,31.872500,27.920113,28.960022,28.960022,141.000000,73.000000,141.000000,false,,,,4,5
+"DB1",2,7,0.393600,28.960022,28.960022,28.960022,32.000000,24.000000,173.000000,false,0.693333,26.437500,23.805195,2,6
+"DB2",2,9,0.820700,28.960022,28.960022,28.960022,67.000000,40.000000,240.000000,true,0.644219,28.453068,23.805195,3,7
