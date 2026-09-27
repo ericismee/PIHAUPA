@@ -44,7 +44,7 @@ public final class LargePaperScaleTest {
             require(close(actual.minUtilLower(), input.lowerThreshold() * expectedTu[index] * copies),
                     "Lower threshold mismatch at " + batch.name());
 
-            Map<String, Double> oracle = calculateLargeByDefinition(accumulated, input);
+            Map<String, Double> oracle = calculateByDefinition(accumulated, input, false);
             Map<String, Double> observed = new HashMap<>();
             for (PatternResult pattern : actual.largePatterns()) {
                 observed.put(pattern.displayName(), pattern.averageUtility());
@@ -53,6 +53,15 @@ public final class LargePaperScaleTest {
                     + ": expected=" + oracle.keySet() + ", actual=" + observed.keySet());
             oracle.forEach((pattern, au) -> require(close(au, observed.get(pattern)),
                     "AU mismatch for " + pattern + " at " + batch.name()));
+            Map<String, Double> preLargeOracle = calculateByDefinition(accumulated, input, true);
+            Map<String, Double> preLargeObserved = new HashMap<>();
+            for (PatternResult pattern : actual.preLargePatterns()) {
+                preLargeObserved.put(pattern.displayName(), pattern.averageUtility());
+            }
+            require(preLargeOracle.keySet().containsAll(preLargeObserved.keySet()),
+                    "Managed PRE-LARGE contains an incorrectly classified pattern at " + batch.name());
+            preLargeObserved.forEach((pattern, au) -> require(close(au, preLargeOracle.get(pattern)),
+                    "PRE-LARGE AU mismatch for " + pattern + " at " + batch.name()));
             System.out.println(batch.name() + " OK: TU=" + actual.totalTransactionUtility()
                     + ", upper=" + actual.minUtilUpper() + ", LARGE=" + observed.size());
         }
@@ -67,7 +76,8 @@ public final class LargePaperScaleTest {
                 + " transactions, AU oracle, thresholds, and Eq.(6) decisions.");
     }
 
-    private static Map<String, Double> calculateLargeByDefinition(List<Transaction> transactions, InputData input) {
+    private static Map<String, Double> calculateByDefinition(
+            List<Transaction> transactions, InputData input, boolean preLarge) {
         List<String> items = new ArrayList<>(new TreeSet<>(input.externalUtilities().keySet()));
         double totalTu = 0.0;
         for (Transaction transaction : transactions) {
@@ -76,7 +86,8 @@ public final class LargePaperScaleTest {
             }
         }
         double upper = input.upperThreshold() * totalTu;
-        Map<String, Double> large = new HashMap<>();
+        double lower = input.lowerThreshold() * totalTu;
+        Map<String, Double> matching = new HashMap<>();
         for (int mask = 1; mask < (1 << items.size()); mask++) {
             List<String> pattern = new ArrayList<>();
             for (int bit = 0; bit < items.size(); bit++) {
@@ -90,9 +101,10 @@ public final class LargePaperScaleTest {
                 }
             }
             double au = sum / pattern.size();
-            if (au + EPSILON >= upper) large.put(String.join("", pattern), au);
+            if (preLarge ? au + EPSILON >= lower && au < upper - EPSILON
+                    : au + EPSILON >= upper) matching.put(String.join("", pattern), au);
         }
-        return large;
+        return matching;
     }
 
     private static double findAu(AnalysisReport.BatchView batch, String name) {

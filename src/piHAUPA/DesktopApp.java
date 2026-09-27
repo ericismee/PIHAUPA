@@ -6,6 +6,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -19,6 +20,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.TransferHandler;
 import javax.swing.UIManager;
+import javax.swing.LookAndFeel;
 import javax.swing.Scrollable;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -32,6 +34,7 @@ import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.FileDialog;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -45,6 +48,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.datatransfer.DataFlavor;
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,7 +80,10 @@ public final class DesktopApp extends JFrame {
     private final JLabel reportMetaLabel = label("Sẵn sàng phân tích", 11, Font.PLAIN, MUTED);
     private final JLabel finalThresholdLabel = label("", 11, Font.PLAIN, MUTED);
     private final JLabel statusLabel = new JLabel("●  Đã nạp dữ liệu bài báo");
+    private final JLabel loadingSourceLabel = label("", 13, Font.PLAIN, MUTED);
     private final JButton runButton = primaryButton("Chạy và so sánh   →");
+    private final JButton exportButton = secondaryButton("↓  Xuất TXT và CSV kết quả");
+    private RunResult lastRun;
     private final CardLayout resultCards = new CardLayout();
     private final JPanel resultHost = new JPanel(resultCards);
     private final JPanel overviewTab = new JPanel(new BorderLayout(12, 12));
@@ -143,10 +150,16 @@ public final class DesktopApp extends JFrame {
         workspace.setBackground(CANVAS);
         workspace.setBorder(BorderFactory.createEmptyBorder(22, 22, 22, 22));
         JPanel controls = createControls();
-        controls.setPreferredSize(new Dimension(355, 680));
-        workspace.add(controls, BorderLayout.WEST);
+        controls.setPreferredSize(new Dimension(355, 790));
+        JScrollPane controlsScroll = new JScrollPane(controls,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        controlsScroll.setBorder(null);
+        controlsScroll.setPreferredSize(new Dimension(372, 680));
+        controlsScroll.getVerticalScrollBar().setUnitIncrement(18);
+        workspace.add(controlsScroll, BorderLayout.WEST);
         resultHost.setOpaque(false);
         resultHost.add(createEmptyState(), "empty");
+        resultHost.add(createLoadingState(), "loading");
         resultHost.add(createDashboard(), "dashboard");
         workspace.add(resultHost, BorderLayout.CENTER);
         resultCards.show(resultHost, "empty");
@@ -187,6 +200,12 @@ public final class DesktopApp extends JFrame {
         arrow.setAlignmentX(Component.CENTER_ALIGNMENT);
         inputNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         inputMetaLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        for (JLabel text : List.of(inputNameLabel, inputMetaLabel)) {
+            text.setHorizontalAlignment(SwingConstants.CENTER);
+            text.setPreferredSize(new Dimension(270, 20));
+            text.setMinimumSize(new Dimension(0, 20));
+            text.setMaximumSize(new Dimension(270, 20));
+        }
         upload.add(arrow);
         upload.add(Box.createVerticalStrut(6));
         upload.add(inputNameLabel);
@@ -281,10 +300,21 @@ public final class DesktopApp extends JFrame {
         c.insets = new Insets(8, 0, 0, 0);
         JButton chooseOutput = tertiaryButton("＋  Thư mục xuất báo cáo (tuỳ chọn)");
         card.add(chooseOutput, c);
+        c.gridy++;
+        c.insets = new Insets(8, 0, 0, 0);
+        exportButton.setEnabled(false);
+        exportButton.setToolTipText("Xuất BAO_CAO.txt, bao-cao.csv và các bảng CSV từ kết quả đang hiển thị");
+        card.add(exportButton, c);
+        c.gridy++;
+        c.weighty = 1;
+        c.fill = GridBagConstraints.BOTH;
+        c.insets = new Insets(0, 0, 0, 0);
+        card.add(Box.createVerticalGlue(), c);
 
         chooseInput.addActionListener(event -> chooseFile());
         sampleButton.addActionListener(event -> usePaperSample());
         chooseOutput.addActionListener(event -> chooseOutputDirectory());
+        exportButton.addActionListener(event -> exportLastRun());
         runButton.addActionListener(event -> runAnalysis());
         return card;
     }
@@ -314,6 +344,30 @@ public final class DesktopApp extends JFrame {
         return empty;
     }
 
+    private JPanel createLoadingState() {
+        RoundedPanel loading = new RoundedPanel(20, SURFACE);
+        loading.setLayout(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 0;
+        JLabel mark = label("…", 34, Font.BOLD, PRIMARY);
+        mark.setHorizontalAlignment(SwingConstants.CENTER);
+        mark.setOpaque(true);
+        mark.setBackground(PRIMARY_SOFT);
+        mark.setPreferredSize(new Dimension(100, 100));
+        loading.add(mark, c);
+        c.gridy++;
+        c.insets = new Insets(22, 0, 8, 0);
+        loading.add(label("Đang phân tích dữ liệu", 23, Font.BOLD, INK), c);
+        c.gridy++;
+        c.insets = new Insets(0, 0, 8, 0);
+        loading.add(loadingSourceLabel, c);
+        c.gridy++;
+        loading.add(label("Original Eq.(5) và Tight Eq.(6) đang chạy trên cùng dữ liệu.",
+                13, Font.PLAIN, MUTED), c);
+        return loading;
+    }
+
     private JPanel createDashboard() {
         overviewTab.setOpaque(false);
         batchTab.setOpaque(false);
@@ -337,7 +391,7 @@ public final class DesktopApp extends JFrame {
         report.add(Box.createVerticalStrut(18));
         report.add(section("05", "Original và Tight", "So sánh hai điều kiện re-scan trên cùng dữ liệu", comparisonView()));
         report.add(Box.createVerticalStrut(18));
-        report.add(section("06", "Tập mẫu cuối cùng", "AU quyết định LARGE hoặc PRE-LARGE", patternView()));
+        report.add(section("06", "Tập mẫu cuối cùng", "HAUP đầy đủ; PRE-LARGE là các ứng viên đang được quản lý", patternView()));
         reportScroll = scroll(report);
         dashboard.add(reportScroll, BorderLayout.CENTER);
         return dashboard;
@@ -766,7 +820,7 @@ public final class DesktopApp extends JFrame {
         JPanel groups = new JPanel(new GridLayout(1, 2, 12, 0));
         groups.setOpaque(false);
         groups.add(patternGroup("LARGE / HAUP", batch.largePatterns(), TEAL, TEAL_SOFT));
-        groups.add(patternGroup("PRE-LARGE", batch.preLargePatterns(), AMBER, AMBER_SOFT));
+        groups.add(patternGroup("PRE-LARGE ĐANG GIỮ", batch.preLargePatterns(), AMBER, AMBER_SOFT));
         view.add(groups);
         return view;
     }
@@ -791,7 +845,9 @@ public final class DesktopApp extends JFrame {
         panel.setBorder(BorderFactory.createEmptyBorder(16, 12, 12, 12));
         JPanel heading = new JPanel(new BorderLayout());
         heading.setOpaque(false);
-        heading.add(finalThresholdLabel, BorderLayout.WEST);
+        heading.add(vertical(finalThresholdLabel,
+                label("PRE-LARGE hiển thị là các ứng viên được giữ trong pattern tree, không phải mọi tập theo ngưỡng.",
+                        10, Font.PLAIN, MUTED)), BorderLayout.CENTER);
         JPanel legend = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         legend.setOpaque(false);
         legend.add(label("● LARGE", 11, Font.BOLD, TEAL));
@@ -839,6 +895,11 @@ public final class DesktopApp extends JFrame {
             return;
         }
         runButton.setEnabled(false);
+        exportButton.setEnabled(false);
+        lastRun = null;
+        loadingSourceLabel.setText(inputField.getText().isBlank()
+                ? "Tables 2–3 · dữ liệu bài báo" : inputNameLabel.getText());
+        resultCards.show(resultHost, "loading");
         statusLabel.setForeground(AMBER);
         statusLabel.setText("●  Đang chạy hai thuật toán…");
         new SwingWorker<RunResult, Void>() {
@@ -851,14 +912,13 @@ public final class DesktopApp extends JFrame {
                 ComparisonReport report = ComparisonReport.run(input);
                 Path output = outputField.getText().isBlank() ? null : Path.of(outputField.getText().trim());
                 if (output != null) {
-                    InputWriter.writeCombined(input, output.resolve("pihaupa-input.txt"));
-                    if (input.batches().size() == 3) {
-                        InputWriter.writeThreeSplitFiles(input, output.resolve("splits"));
-                    }
-                    ReportWriter.writeAll(report.tight(), output);
-                    ReportWriter.writeComparison(report, output);
+                    String source = inputField.getText().isBlank() ? "Tables 2–3 · bài báo"
+                            : Path.of(inputField.getText().trim()).getFileName().toString();
+                    ExportBundle.writeDirectory(input, report, output, source);
                 }
-                return new RunResult(report, input, output);
+                String source = inputField.getText().isBlank() ? "Tables 2–3 · bài báo"
+                        : Path.of(inputField.getText().trim()).getFileName().toString();
+                return new RunResult(report, input, output, source);
             }
 
             @Override
@@ -866,10 +926,16 @@ public final class DesktopApp extends JFrame {
                 runButton.setEnabled(true);
                 try {
                     RunResult result = get();
+                    lastRun = result;
+                    exportButton.setEnabled(true);
                     populateDashboard(result.report(), result.input());
                     statusLabel.setForeground(TEAL);
-                    statusLabel.setText("●  Hoàn tất" + (result.output() == null ? "" : " · Đã xuất báo cáo"));
+                    statusLabel.setText(result.output() == null ? "●  Hoàn tất · chưa chọn thư mục xuất"
+                            : "●  Đã xuất TXT và CSV");
+                    statusLabel.setToolTipText(result.output() == null ? null
+                            : result.output().toAbsolutePath().toString());
                 } catch (Exception error) {
+                    resultCards.show(resultHost, "empty");
                     showError(error.getCause() == null ? error : error.getCause());
                 }
             }
@@ -879,20 +945,38 @@ public final class DesktopApp extends JFrame {
     private void chooseFile() {
         Path start = inputField.getText().isBlank() ? Path.of("examples")
                 : Path.of(inputField.getText().trim());
-        Path selected = ModernPathDialog.choose(this, start, false);
-        if (selected != null) selectInput(selected);
+        Path directory = start.toAbsolutePath().normalize();
+        if (!Files.isDirectory(directory)) directory = directory.getParent();
+        if (directory == null || !Files.isDirectory(directory)) directory = Path.of(".").toAbsolutePath();
+
+        FileDialog picker = new FileDialog(this, "Mở tệp dữ liệu PIHAUPA", FileDialog.LOAD);
+        picker.setDirectory(directory.toString());
+        picker.setFile("*.txt");
+        picker.setVisible(true);
+        if (picker.getFile() == null) return;
+        Path selected = Path.of(picker.getDirectory(), picker.getFile()).toAbsolutePath().normalize();
+        if (!Files.isRegularFile(selected) || !selected.getFileName().toString()
+                .toLowerCase(Locale.ROOT).endsWith(".txt")) {
+            showError(new IllegalArgumentException("Hãy chọn một tệp dữ liệu .txt hiện có."));
+            return;
+        }
+        selectInput(selected);
     }
 
     private void selectInput(Path selected) {
+        lastRun = null;
+        exportButton.setEnabled(false);
         inputField.setText(selected.toString());
-        inputNameLabel.setText(selected.getFileName().toString());
+        inputNameLabel.setText(ellipsis(selected.getFileName().toString(), 31));
         inputNameLabel.setToolTipText(selected.toString());
-        inputMetaLabel.setText("TXT · " + selected.getParent());
+        inputMetaLabel.setText("TXT · Tệp dữ liệu từ máy");
         inputMetaLabel.setToolTipText(selected.toString());
         statusLabel.setText("●  Đã chọn " + selected.getFileName());
     }
 
     private void usePaperSample() {
+        lastRun = null;
+        exportButton.setEnabled(false);
         inputField.setText(Path.of("examples", "paper-example.txt").toString());
         inputNameLabel.setText("Tables 2–3 · paper-example.txt");
         inputMetaLabel.setText("TXT · dữ liệu định lượng theo batch");
@@ -905,11 +989,69 @@ public final class DesktopApp extends JFrame {
     private void chooseOutputDirectory() {
         Path start = outputField.getText().isBlank() ? Path.of("results")
                 : Path.of(outputField.getText().trim());
-        Path selected = ModernPathDialog.choose(this, start, true);
+        Path directory = start.toAbsolutePath().normalize();
+        if (!Files.isDirectory(directory)) directory = directory.getParent();
+        if (directory == null || !Files.isDirectory(directory)) directory = Path.of(".").toAbsolutePath();
+        Path selected = null;
+        LookAndFeel previous = UIManager.getLookAndFeel();
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            JFileChooser picker = new JFileChooser(directory.toFile());
+            picker.setDialogTitle("Chọn thư mục lưu TXT và CSV");
+            picker.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            picker.setApproveButtonText("Chọn thư mục");
+            if (picker.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                selected = picker.getSelectedFile().toPath().toAbsolutePath().normalize();
+            }
+        } catch (Exception error) {
+            showError(error);
+        } finally {
+            try { UIManager.setLookAndFeel(previous); } catch (Exception ignored) { }
+        }
         if (selected != null) {
             outputField.setText(selected.toString());
             statusLabel.setText("●  Báo cáo sẽ lưu tại " + selected.getFileName());
         }
+    }
+
+    private void exportLastRun() {
+        RunResult snapshot = lastRun;
+        if (snapshot == null) return;
+        try {
+            if (Double.parseDouble(upperField.getText().trim()) != snapshot.input().upperThreshold()
+                    || Double.parseDouble(lowerField.getText().trim()) != snapshot.input().lowerThreshold()) {
+                throw new IllegalArgumentException("Ngưỡng đã thay đổi. Hãy chạy lại trước khi xuất.");
+            }
+        } catch (NumberFormatException error) {
+            showError(new IllegalArgumentException("Ngưỡng không hợp lệ. Hãy chạy lại trước khi xuất."));
+            return;
+        } catch (IllegalArgumentException error) {
+            showError(error);
+            return;
+        }
+        if (outputField.getText().isBlank()) chooseOutputDirectory();
+        if (outputField.getText().isBlank()) return;
+        Path destination = Path.of(outputField.getText().trim());
+        exportButton.setEnabled(false);
+        statusLabel.setForeground(AMBER);
+        statusLabel.setText("●  Đang xuất báo cáo…");
+        new SwingWorker<Void, Void>() {
+            @Override protected Void doInBackground() throws Exception {
+                ExportBundle.writeDirectory(snapshot.input(), snapshot.report(), destination, snapshot.source());
+                return null;
+            }
+            @Override protected void done() {
+                exportButton.setEnabled(true);
+                try {
+                    get();
+                    statusLabel.setForeground(TEAL);
+                    statusLabel.setText("●  Đã xuất TXT và CSV");
+                    statusLabel.setToolTipText(destination.toAbsolutePath().toString());
+                } catch (Exception error) {
+                    showError(error.getCause() == null ? error : error.getCause());
+                }
+            }
+        }.execute();
     }
 
     private void showError(Throwable error) {
@@ -1017,9 +1159,12 @@ public final class DesktopApp extends JFrame {
     private static JButton tertiaryButton(String text) {
         JButton button = button(text, SURFACE, new Color(65, 84, 107));
         button.setBorderPainted(true);
-        button.setBorder(BorderFactory.createLineBorder(BORDER));
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                BorderFactory.createEmptyBorder(9, 12, 9, 12)));
         button.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
-        button.setPreferredSize(new Dimension(120, 36));
+        button.setPreferredSize(new Dimension(240, 42));
+        button.setMinimumSize(new Dimension(180, 42));
         return button;
     }
 
@@ -1119,6 +1264,9 @@ public final class DesktopApp extends JFrame {
 
     private static void addRow(DefaultTableModel model, Object... values) { model.addRow(values); }
     private static String f(double value) { return String.format(Locale.US, "%.3f", value); }
+    private static String ellipsis(String value, int maxLength) {
+        return value.length() <= maxLength ? value : value.substring(0, maxLength - 1) + "…";
+    }
     private static String signed(long value) { return value > 0 ? "+" + value : String.valueOf(value); }
     private static String percent(double oldValue, double newValue) {
         return oldValue == 0 ? "—" : String.format(Locale.US, "%+.1f%%", (newValue - oldValue) / oldValue * 100.0);
@@ -1148,7 +1296,7 @@ public final class DesktopApp extends JFrame {
         });
     }
 
-    private record RunResult(ComparisonReport report, InputData input, Path output) { }
+    private record RunResult(ComparisonReport report, InputData input, Path output, String source) { }
 
     private static final class RoundedPanel extends JPanel {
         private final int radius;

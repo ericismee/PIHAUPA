@@ -20,29 +20,43 @@ T8: B:5 C:1 D:3 E:2
 T9: A:1 B:3 D:1`;
 
 let inputText = paperSample;
+let sourceName = "paper-example.txt";
 let currentReport = null;
+let analyzedInput = null;
 let selectedBatch = 0;
 let patternFilter = "ALL";
 const $ = id => document.getElementById(id);
 const format = (n, digits = 3) => Number(n).toLocaleString("vi-VN", { maximumFractionDigits: digits, minimumFractionDigits: digits });
 const percentDelta = (oldValue, newValue) => oldValue === 0 ? "—" : `${format((newValue - oldValue) / oldValue * 100, 1)}%`;
 
+$("chooseFileButton").addEventListener("click", () => $("fileInput").click());
+
 $("sampleButton").addEventListener("click", () => {
   inputText = paperSample;
-  $("fileName").textContent = "Tables 2–3 · paper-example.txt";
+  sourceName = "paper-example.txt";
+  $("fileInput").value = "";
+  $("fileName").textContent = "paper-example.txt";
   $("su").value = "0.23"; $("sl").value = "0.10";
+  invalidateReport();
   setStatus("idle", "Đã nạp dữ liệu bài báo");
 });
 
 $("fileInput").addEventListener("change", async event => {
   const file = event.target.files[0];
   if (!file) return;
+  if (file.size > 20 * 1024 * 1024) return setStatus("error", "File vượt quá giới hạn 20 MB.");
   inputText = await file.text();
+  sourceName = file.name;
   $("fileName").textContent = file.name;
+  invalidateReport();
   setStatus("idle", `Đã đọc ${file.name}`);
 });
 
 $("runButton").addEventListener("click", run);
+$("exportTxtButton").addEventListener("click", () => exportReport("txt"));
+$("exportCsvButton").addEventListener("click", () => exportReport("csv"));
+$("su").addEventListener("input", invalidateReport);
+$("sl").addEventListener("input", invalidateReport);
 document.querySelectorAll(".filter").forEach(button => button.addEventListener("click", () => {
   document.querySelectorAll(".filter").forEach(x => x.classList.remove("active"));
   button.classList.add("active"); patternFilter = button.dataset.filter; renderPatterns();
@@ -51,15 +65,67 @@ document.querySelectorAll(".filter").forEach(button => button.addEventListener("
 async function run() {
   const su = Number($("su").value), sl = Number($("sl").value);
   if (!(sl > 0 && sl < su && su <= 1)) return setStatus("error", "Cần 0 < Sl < Su ≤ 1");
+  invalidateReport();
   $("runButton").disabled = true; setStatus("running", "Đang chạy hai thuật toán…");
   try {
     const response = await fetch(`/api/analyze?su=${encodeURIComponent(su)}&sl=${encodeURIComponent(sl)}`, {method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:inputText});
+    if (!response.ok) throw new Error(await apiError(response));
+    if (!response.headers.get("content-type")?.includes("application/json"))
+      throw new Error("Server trả sai định dạng. Hãy đóng server cũ và chạy lại ứng dụng web.");
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Không thể phân tích dữ liệu.");
     currentReport = data; selectedBatch = data.tight.batches.length - 1;
+    analyzedInput = { text: inputText, source: sourceName, su, sl };
+    $("exportTxtButton").disabled = false;
+    $("exportCsvButton").disabled = false;
     render(); setStatus("success", "Phân tích hoàn tất");
   } catch (error) { setStatus("error", error.message); }
   finally { $("runButton").disabled = false; }
+}
+
+function invalidateReport() {
+  currentReport = null;
+  analyzedInput = null;
+  $("exportTxtButton").disabled = true;
+  $("exportCsvButton").disabled = true;
+  $("dashboard").hidden = true;
+  $("emptyState").hidden = false;
+}
+
+async function exportReport(format) {
+  if (!analyzedInput) return;
+  const snapshot = analyzedInput;
+  $("exportTxtButton").disabled = true;
+  $("exportCsvButton").disabled = true;
+  $("runButton").disabled = true;
+  setStatus("running", `Đang tạo báo cáo ${format.toUpperCase()}…`);
+  try {
+    const query = new URLSearchParams({su: snapshot.su, sl: snapshot.sl, source: snapshot.source, format});
+    const response = await fetch(`/api/export?${query}`, {
+      method: "POST", headers: {"Content-Type": "text/plain;charset=utf-8"}, body: snapshot.text
+    });
+    if (!response.ok) throw new Error(await apiError(response));
+    const expectedType = format === "txt" ? "text/plain" : "text/csv";
+    if (!response.headers.get("content-type")?.includes(expectedType))
+      throw new Error("Server chưa hỗ trợ xuất TXT/CSV. Hãy đóng server cũ và chạy lại ứng dụng web.");
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a");
+    link.href = url; link.download = `PIHAUPA-bao-cao.${format}`;
+    document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    setStatus("success", `Đã tải báo cáo ${format.toUpperCase()}`);
+  } catch (error) { setStatus("error", error.message); }
+  finally {
+    $("runButton").disabled = false;
+    $("exportTxtButton").disabled = !analyzedInput;
+    $("exportCsvButton").disabled = !analyzedInput;
+  }
+}
+
+async function apiError(response) {
+  if (response.status === 404) return "Không tìm thấy chức năng trên server đang chạy (404). Hãy đóng server cũ và mở lại bằng run-web.ps1.";
+  const body = await response.text();
+  try { return JSON.parse(body).error || `Lỗi HTTP ${response.status}`; }
+  catch { return `Lỗi HTTP ${response.status}: ${body.slice(0, 140) || "không có chi tiết"}`; }
 }
 
 function setStatus(kind, text) { const node=$("status"); node.dataset.kind=kind; node.querySelector("span").textContent=text; }

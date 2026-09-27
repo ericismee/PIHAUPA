@@ -23,9 +23,13 @@ public final class ReportWriter {
     public static void writeComparison(ComparisonReport comparison, Path outputDirectory) throws IOException {
         Files.createDirectories(outputDirectory);
         Files.writeString(outputDirectory.resolve("comparison.json"), comparison.toJson(), StandardCharsets.UTF_8);
+        Files.writeString(outputDirectory.resolve("comparison.csv"), comparisonCsv(comparison), StandardCharsets.UTF_8);
+    }
+
+    public static String comparisonCsv(ComparisonReport comparison) {
         AnalysisReport oldReport = comparison.original();
         AnalysisReport newReport = comparison.tight();
-        String csv = "metric,originalEq5,tightEq6\n"
+        return "metric,originalEq5,tightEq6\n"
                 + "rescanCount," + oldReport.stats().rescanCount() + "," + newReport.stats().rescanCount() + "\n"
                 + "elapsedMs," + number(oldReport.elapsedNanos() / 1_000_000.0) + ","
                 + number(newReport.elapsedNanos() / 1_000_000.0) + "\n"
@@ -38,7 +42,6 @@ public final class ReportWriter {
                 + "combinedNodes," + oldReport.stats().combinedNodes() + ","
                 + newReport.stats().combinedNodes() + "\n"
                 + "sameFinalHaups," + comparison.sameHaups() + "," + comparison.sameHaups() + "\n";
-        Files.writeString(outputDirectory.resolve("comparison.csv"), csv, StandardCharsets.UTF_8);
     }
 
     public static String performanceCsv(AnalysisReport report) {

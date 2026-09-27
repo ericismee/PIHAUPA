@@ -89,6 +89,12 @@ public final class InputParser {
                     throw new IllegalArgumentException("Transaction appears before any batch: " + line);
                 }
                 currentTransactions.add(parseTransaction(line));
+            } else if (Double.isNaN(upper) && Double.isNaN(lower) && external.isEmpty()
+                    && batches.isEmpty() && currentBatchName == null
+                    && line.matches("[0-9]+(?:\\s+[0-9]+){7}")) {
+                throw new IllegalArgumentException("Tệp này giống PIPA all_data.txt (8 cột metadata ảnh), "
+                        + "không phải dữ liệu giao dịch PIHAUPA. Thiếu external utility, "
+                        + "batch và internal utility; không thể suy ra các giá trị đó từ tọa độ ảnh.");
             } else {
                 throw new IllegalArgumentException("Cannot parse line: " + line);
             }

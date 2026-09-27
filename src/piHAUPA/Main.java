@@ -22,12 +22,9 @@ public final class Main {
         printReport(input, report, options.summaryOnly);
 
         if (options.outputDirectory != null) {
-            InputWriter.writeCombined(input, options.outputDirectory.resolve("pihaupa-input.txt"));
-            if (input.batches().size() == 3) {
-                InputWriter.writeThreeSplitFiles(input, options.outputDirectory.resolve("splits"));
-            }
-            ReportWriter.writeAll(report, options.outputDirectory);
-            ReportWriter.writeComparison(comparison, options.outputDirectory);
+            String source = options.inputPath == null ? "Tables 2–3 · bài báo"
+                    : options.inputPath.getFileName().toString();
+            ExportBundle.writeDirectory(input, comparison, options.outputDirectory, source);
             System.out.println("Da xuat ket qua: " + options.outputDirectory.toAbsolutePath());
         }
     }

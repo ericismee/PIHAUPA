@@ -122,13 +122,21 @@ Giá trị sau item là **internal utility**; phần `external` là **external u
 
 Sau DB1, `AE=34` và `B=35` chuyển thành PRE-LARGE; `CAE=15.333` thành SMALL và bị loại khỏi pattern tree. DB2 làm điều kiện tight đạt, nên chương trình full scan và mở rộng mẫu lại.
 
+Lưu ý: khi **không** re-scan, PIHAUPA chỉ cập nhật các ứng viên LARGE/PRE-LARGE
+đã có trong pattern tree. Do đó danh sách PRE-LARGE hiển thị là tập **được quản
+lý**, không nhất thiết chứa mọi tập thỏa bất đẳng thức lower/upper nếu tính lại
+vét cạn. Ví dụ `F` đạt ngưỡng PRE-LARGE ở DB1 nhưng không nằm trong cây từ DB0;
+điều kiện tight vẫn bảo đảm nó chưa thể thành LARGE trước lần re-scan kế tiếp.
+
 ## Kiểm thử
 
 ```powershell
 .\run-tests.ps1
+java -ea -cp out piHAUPA.DesktopLayoutSmokeTest
 ```
 
 Bộ test kiểm tra số liệu Tables 2-5, ranh giới phân loại, dấu `>=` của re-scan, tích luỹ ID qua nhiều batch, đối chiếu kết quả bằng vét cạn trên dữ liệu ngẫu nhiên nhỏ và dữ liệu input không hợp lệ.
+Bài smoke test desktop kiểm tra kích thước nút ở cột trái và hộp chọn thư mục xuất.
 
 ### Bộ dữ liệu lớn có đáp án đối chiếu
 
@@ -145,7 +153,8 @@ bài báo; cấu trúc mẫu và quyết định re-scan phải giữ nguyên.
 
 AU cuối: `E=84.000`, `B=75.000`, `BE=63.500`. Tight re-scan một lần ở
 DB2; Original re-scan ở DB1 và DB2. Chạy bộ kiểm chứng độc lập theo định nghĩa
-`AU(P)` (vét cạn mọi tập con của A–F):
+`AU(P)` (vét cạn mọi tập con của A–F). Bộ test so khớp toàn bộ LARGE/HAUP và
+kiểm tra AU, phân loại của từng PRE-LARGE được quản lý:
 
 ```powershell
 .\verify-large.ps1
@@ -160,6 +169,19 @@ Tạo lại file với hệ số lặp khác, ví dụ 2.000 lần (18.000 giao 
 
 Desktop mở sẵn 25 giao dịch đầu khi đọc file lớn và có nút xem thêm. Thuật toán
 vẫn tính trên toàn bộ file, không chỉ phần đang hiển thị.
+Nút **Chọn tệp** mở hộp chọn tệp gốc của Windows; có thể kéo thả tệp `.txt`
+vào vùng dữ liệu. Thư mục xuất dùng hộp chọn thư mục chuẩn của hệ điều hành. Khi
+đang chạy, báo cáo cũ được ẩn để tránh nhầm với kết quả của file mới.
 
-Khi xuất kết quả, `comparison.csv` và `comparison.json` chứa bảng so sánh Original
-Eq.(5) với Tight Eq.(6); các file còn lại chứa pattern và hiệu năng chi tiết từng batch.
+Khi xuất từ desktop/CLI, mở `BAO_CAO.txt` trước để đọc kết luận, công thức,
+so sánh Original/Tight và kết quả từng batch. `bao-cao.csv` là bảng tổng hợp
+dùng để lọc; `patterns.csv`, `performance-by-rows.csv`, `comparison.csv`
+chứa các bảng chi tiết; `pihaupa-input.txt` là input đã chuẩn hoá. Web có hai
+nút tải riêng TXT và CSV. Web tính lại khi xuất, nên thời gian và heap có thể
+khác số đang hiển thị. Không xuất HTML hay ZIP.
+
+`PIPA_dataset/all_data.txt` là metadata nhận diện người trong ảnh gồm 8 cột
+(album, ảnh, bounding box, identity, subset), **không phải** input PIHAUPA.
+Không thể suy ra internal/external utility hoặc batch từ các cột đó; ứng dụng
+báo lỗi rõ ràng nếu chọn nhầm. Muốn chuyển dữ liệu này thành giao dịch utility
+cần xác định trước ý nghĩa item, IU, EU và cách chia batch.

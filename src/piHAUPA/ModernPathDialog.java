@@ -11,6 +11,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import javax.swing.plaf.basic.BasicScrollBarUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
@@ -18,7 +19,11 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
@@ -65,7 +70,9 @@ final class ModernPathDialog extends JDialog {
         add(header(), BorderLayout.NORTH);
         add(browser(), BorderLayout.CENTER);
         add(footer(), BorderLayout.SOUTH);
-        navigate(start);
+        Path initial = start == null ? Path.of(".") : start.toAbsolutePath().normalize();
+        while (initial != null && !Files.isDirectory(initial)) initial = initial.getParent();
+        navigate(initial == null ? Path.of(".") : initial);
     }
 
     private JPanel header() {
@@ -105,10 +112,10 @@ final class ModernPathDialog extends JDialog {
         navigation.add(parent, BorderLayout.WEST);
         styleField(pathField);
         pathField.setToolTipText("Nhập đường dẫn thư mục rồi nhấn Enter");
-        pathField.addActionListener(event -> navigate(Path.of(pathField.getText().trim())));
+        pathField.addActionListener(event -> navigateTyped());
         navigation.add(pathField, BorderLayout.CENTER);
         JButton go = button("Mở đường dẫn", false);
-        go.addActionListener(event -> navigate(Path.of(pathField.getText().trim())));
+        go.addActionListener(event -> navigateTyped());
         navigation.add(go, BorderLayout.EAST);
         panel.add(navigation, BorderLayout.NORTH);
 
@@ -120,10 +127,23 @@ final class ModernPathDialog extends JDialog {
         entriesTable.setSelectionBackground(new Color(232, 240, 255));
         entriesTable.setSelectionForeground(INK);
         entriesTable.setShowVerticalLines(false);
+        entriesTable.setShowHorizontalLines(false);
+        entriesTable.setIntercellSpacing(new Dimension(0, 0));
         entriesTable.setGridColor(new Color(239, 243, 248));
         entriesTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
         entriesTable.getTableHeader().setBackground(CANVAS);
         entriesTable.getTableHeader().setForeground(MUTED);
+        entriesTable.getTableHeader().setReorderingAllowed(false);
+        entriesTable.getTableHeader().setPreferredSize(new Dimension(0, 36));
+        entriesTable.getTableHeader().setDefaultRenderer((table, value, selected, focused, row, column) -> {
+            JLabel heading = label(String.valueOf(value), 11, Font.BOLD, MUTED);
+            heading.setOpaque(true);
+            heading.setBackground(CANVAS);
+            heading.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER),
+                    BorderFactory.createEmptyBorder(0, 12, 0, 8)));
+            return heading;
+        });
         entriesTable.getSelectionModel().addListSelectionListener(event -> {
             int row = entriesTable.getSelectedRow();
             if (!event.getValueIsAdjusting() && row >= 0 && row < entries.size()) {
@@ -142,7 +162,11 @@ final class ModernPathDialog extends JDialog {
         });
         JScrollPane scroll = new JScrollPane(entriesTable);
         scroll.setBorder(BorderFactory.createLineBorder(BORDER));
+        scroll.getViewport().setBackground(Color.WHITE);
         scroll.getVerticalScrollBar().setUnitIncrement(22);
+        scroll.getVerticalScrollBar().setUI(new SlimScrollBarUI());
+        scroll.getVerticalScrollBar().setPreferredSize(new Dimension(10, 0));
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         panel.add(scroll, BorderLayout.CENTER);
         return panel;
     }
@@ -215,8 +239,18 @@ final class ModernPathDialog extends JDialog {
             entriesTable.getColumnModel().getColumn(0).setPreferredWidth(470);
             entriesTable.getColumnModel().getColumn(1).setPreferredWidth(120);
             entriesTable.getColumnModel().getColumn(2).setPreferredWidth(100);
-            DefaultTableCellRenderer renderer = new DefaultTableCellRenderer();
-            renderer.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+            DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+                @Override public java.awt.Component getTableCellRendererComponent(
+                        JTable table, Object value, boolean selected, boolean focused, int row, int column) {
+                    super.getTableCellRendererComponent(table, value, selected, focused, row, column);
+                    if (!selected) {
+                        setBackground(row % 2 == 0 ? Color.WHITE : CANVAS);
+                        setForeground(column == 0 ? INK : MUTED);
+                    }
+                    setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
+                    return this;
+                }
+            };
             for (int i = 0; i < model.getColumnCount(); i++)
                 entriesTable.getColumnModel().getColumn(i).setCellRenderer(renderer);
             feedback(found.size() + " mục trong " + path.getFileName(), false);
@@ -225,15 +259,31 @@ final class ModernPathDialog extends JDialog {
         }
     }
 
+    private void navigateTyped() {
+        try {
+            navigate(Path.of(pathField.getText().trim()));
+        } catch (RuntimeException error) {
+            feedback("Đường dẫn không hợp lệ: " + error.getMessage(), true);
+        }
+    }
+
     private void acceptTyped() {
-        String text = nameField.getText().trim();
-        Path target = text.isEmpty() ? currentDirectory
-                : Path.of(text).isAbsolute() ? Path.of(text) : currentDirectory.resolve(text);
-        if (target != null) accept(target);
+        try {
+            String text = nameField.getText().trim();
+            Path target = text.isEmpty() ? currentDirectory
+                    : Path.of(text).isAbsolute() ? Path.of(text) : currentDirectory.resolve(text);
+            if (target != null) accept(target);
+        } catch (RuntimeException error) {
+            feedback("Tên hoặc đường dẫn không hợp lệ: " + error.getMessage(), true);
+        }
     }
 
     private void accept(Path path) {
         Path normalized = path.toAbsolutePath().normalize();
+        if (!directoryMode && Files.isDirectory(normalized)) {
+            navigate(normalized);
+            return;
+        }
         if (directoryMode ? !Files.isDirectory(normalized) : !Files.isRegularFile(normalized)) {
             feedback(directoryMode ? "Hãy chọn một thư mục hiện có." : "Hãy chọn một tệp hiện có.", true);
             return;
@@ -280,15 +330,59 @@ final class ModernPathDialog extends JDialog {
     }
 
     private static JButton button(String text, boolean primary) {
-        JButton button = new JButton(text);
+        JButton button = new JButton(text) {
+            @Override protected void paintComponent(Graphics graphics) {
+                Graphics2D g = (Graphics2D) graphics.create();
+                g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Color fill = primary ? BLUE : Color.WHITE;
+                if (getModel().isPressed()) fill = primary ? new Color(24, 73, 187) : CANVAS;
+                else if (getModel().isRollover()) fill = primary ? new Color(29, 83, 208) : CANVAS;
+                g.setColor(fill);
+                g.fillRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 11, 11);
+                g.setColor(primary ? fill : BORDER);
+                g.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 11, 11);
+                g.dispose();
+                super.paintComponent(graphics);
+            }
+        };
         button.setFont(new Font("Segoe UI", Font.BOLD, 12));
         button.setForeground(primary ? Color.WHITE : INK);
-        button.setBackground(primary ? BLUE : Color.WHITE);
+        button.setContentAreaFilled(false);
+        button.setBorderPainted(false);
+        button.setRolloverEnabled(true);
         button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(primary ? BLUE : BORDER),
-                BorderFactory.createEmptyBorder(8, 14, 8, 14)));
+        button.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
         button.setPreferredSize(new Dimension(primary ? 130 : 115, 38));
         return button;
+    }
+
+    private static final class SlimScrollBarUI extends BasicScrollBarUI {
+        @Override protected void configureScrollBarColors() {
+            thumbColor = new Color(188, 201, 219);
+            trackColor = CANVAS;
+        }
+        @Override protected JButton createDecreaseButton(int orientation) { return zeroButton(); }
+        @Override protected JButton createIncreaseButton(int orientation) { return zeroButton(); }
+        private JButton zeroButton() {
+            JButton button = new JButton();
+            Dimension zero = new Dimension(0, 0);
+            button.setPreferredSize(zero);
+            button.setMinimumSize(zero);
+            button.setMaximumSize(zero);
+            return button;
+        }
+        @Override protected void paintTrack(Graphics graphics, javax.swing.JComponent component, Rectangle bounds) {
+            graphics.setColor(CANVAS);
+            graphics.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+        @Override protected void paintThumb(Graphics graphics, javax.swing.JComponent component, Rectangle bounds) {
+            if (bounds.isEmpty() || !scrollbar.isEnabled()) return;
+            Graphics2D g = (Graphics2D) graphics.create();
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setColor(thumbColor);
+            g.fillRoundRect(bounds.x + 2, bounds.y + 2, Math.max(4, bounds.width - 4),
+                    Math.max(4, bounds.height - 4), 8, 8);
+            g.dispose();
+        }
     }
 }
